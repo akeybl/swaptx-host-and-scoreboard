@@ -1,0 +1,12 @@
+.venv/
+data/*.db*
+__pycache__/
+*.pyc
+.pytest_cache/
+firmware/**/build/
+.DS_Store
+captures/
+data/*.log
+data/*.pid
+.claude/launch.json
+.claude/settings.local.json

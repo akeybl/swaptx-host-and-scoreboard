@@ -1,0 +1,354 @@
+/* SWAPTX Arena - wall/projector view. Everything scales with vmin so it fills any projector. */
+:root{
+  --bg:#05070b; --bg2:#0d1320; --panel:#0f1626; --line:#1f2a40;
+  --ink:#f4f7fb; --ink2:#9fb0c9; --ink3:#5c6b85;
+  --accent:#ff7a1a; --good:#3ddc6a; --warn:#ffb020; --bad:#ff3b3b;
+  --t0:#ff3b3b; --t1:#2f8cff; --t2:#ffd21f; --t3:#3ddc6a; --tn:#8a97ad;
+  --display:"DIN Condensed","Avenir Next Condensed","Arial Narrow",Impact,"Helvetica Neue",sans-serif;
+  --body:"Avenir Next","Helvetica Neue",system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--ink);font-family:var(--body);overflow:hidden}
+body{font-size:2.4vmin;line-height:1.2}
+.hidden{display:none!important}
+.wall{height:100vh;width:100vw;display:grid;grid-template-rows:auto 1fr 3.8vmin;background:
+  radial-gradient(120vmax 60vmax at 50% -20%,#182238 0%,var(--bg) 60%);}
+.team-0{color:var(--t0)} .team-1{color:var(--t1)} .team-2{color:var(--t2)} .team-3{color:var(--t3)} .team-n{color:var(--tn)}
+.bg-team-0{background:var(--t0)} .bg-team-1{background:var(--t1)} .bg-team-2{background:var(--t2)} .bg-team-3{background:var(--t3)} .bg-team-n{background:var(--tn)}
+.display{font-family:var(--display);font-weight:700;letter-spacing:.02em;text-transform:uppercase}
+
+/* ---------- top bar ---------- */
+/* The header sizes to what is in it (two lines of chips, two host buttons) instead of a fixed
+   band, so nothing can run over the rule beneath it; the board takes whatever is left. */
+.topbar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:1.8vmin;padding:1.3vmin 3.2vmin 1.4vmin;min-height:16vmin;border-bottom:.3vmin solid var(--line);background:rgba(0,0,0,.35)}
+/* equal side columns keep the clock on the true centre line whatever the sides hold */
+.tb-left,.tb-right{min-width:0}
+.tb-left,.tb-right{display:flex;flex-direction:column;justify-content:center;gap:.9vmin}
+.tb-right{align-items:flex-end;text-align:right}
+.mode-badge{font-family:var(--display);font-size:4.8vmin;line-height:1;text-transform:uppercase;letter-spacing:.04em;color:var(--ink)}
+.chips{display:flex;gap:1vmin;flex-wrap:wrap}
+.chip{font-size:1.9vmin;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);border:.2vmin solid var(--line);border-radius:1vmin;padding:.3vmin 1.1vmin;background:rgba(255,255,255,.03)}
+.chip.on{color:var(--ink);border-color:var(--ink3)}
+.tb-center{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.7vmin;padding:0 2.4vmin}
+.clock{font-family:var(--display);font-size:11.5vmin;line-height:1.06;font-variant-numeric:tabular-nums;letter-spacing:.03em;overflow:visible;color:var(--ink);transition:color .8s ease}
+.clock.warn{color:#ffb84d}                                                  /* the last minute: amber, faded in */
+.clock.over{color:#ff6b6b;animation:breathe 1.6s ease-in-out infinite}      /* time is up and the host has not called it */
+.clock.storm{color:#8fd3ff;animation:breathe 3.2s ease-in-out infinite}     /* in the storm: a slow pulse */
+.clock-label{font-size:2.2vmin;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--ink2)}
+.phase-badge{font-family:var(--display);font-size:4.6vmin;text-transform:uppercase;display:flex;align-items:center}
+.phase-live .phase-badge{color:var(--ink)}
+.phase-lobby .phase-badge{color:var(--ink)}
+.phase-ended .phase-badge{color:var(--ink)}
+.alive{font-size:2.6vmin;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2)}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.35);opacity:.55}}
+@keyframes breathe{0%,100%{opacity:1}50%{opacity:.45}}      /* a slow fade, never a hard blink */
+
+/* ---------- body ---------- */
+.body{display:grid;grid-template-columns:1fr 31vw;min-height:0;transition:grid-template-columns .9s cubic-bezier(.45,.05,.2,1)}
+.board{padding:2.8vmin 2.8vmin 2.2vmin;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+.feed{container-type:inline-size;--feed-rowh:clamp(4.6vmin,10cqw,6.2vmin);border-left:.3vmin solid var(--line);background:rgba(0,0,0,.28);display:flex;flex-direction:column;min-height:0}
+.feed h2{font-family:var(--display);font-size:clamp(2.2vmin,7cqw,3.2vmin);letter-spacing:.15em;color:var(--ink2);padding:2vmin 2.4vmin .8vmin;border-bottom:.2vmin solid var(--line)}
+.feed ol{list-style:none;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;padding:1vmin 0 1.4vmin;display:flex;flex-direction:column;justify-content:flex-start;min-height:0}
+.feed ol::-webkit-scrollbar{display:none}
+.feed li{display:grid;grid-template-columns:max-content 1fr;gap:.45em;align-items:center;height:var(--feed-rowh);padding:0 2.4vmin;font-size:clamp(1.6vmin,6.2cqw,3.1vmin);line-height:1.15;border-bottom:.15vmin solid rgba(255,255,255,.04);flex-shrink:0;overflow:hidden}
+.feed li.drop{animation:dropin .9s cubic-bezier(.45,.05,.2,1)}
+@keyframes dropin{from{opacity:0;transform:translateY(-100%);height:0}45%{opacity:1;height:var(--feed-rowh)}to{opacity:1;transform:none;height:var(--feed-rowh)}}
+.wall.feed-narrow .body{grid-template-columns:1fr 24vw}
+.wall.feed-narrower .body{grid-template-columns:1fr 20vw}
+.wall.feed-narrow .feed li,.wall.feed-narrower .feed li{padding:0 1.4vmin;grid-template-columns:max-content 1fr}
+.wall.feed-narrow .feed li .t,.wall.feed-narrower .feed li .t{font-size:.72em}
+.feed li .t{font-family:var(--display);font-size:.9em;color:var(--ink3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.feed li .txt{font-weight:600;min-width:0;white-space:nowrap;overflow:hidden}
+.feed li .txt b{font-weight:800}
+.txt .sub{display:block;font-size:.68em;color:var(--ink2);font-weight:500;margin-top:.2vmin}
+.feed .txt .sub{display:inline;margin:0 0 0 .7em;letter-spacing:.04em}
+.feed li.kill .txt{font-size:1.06em}
+.feed li.friendly .txt{color:var(--ink)}
+.feed li.callout .txt{font-family:var(--display);font-size:1.15em;color:var(--ink);letter-spacing:.04em}
+.feed li.phase .txt{font-family:var(--display);font-size:1.1em;letter-spacing:.05em;color:var(--ink)}
+.feed li.good .txt{color:var(--ink2)}
+.feed li.warn .txt{color:var(--ink2)}
+.feed li.objective .txt{color:#c7a3ff}
+.feed li.system .txt{color:var(--ink3)}
+.txt .arrow{color:var(--ink2);padding:0 .8vmin}
+@keyframes slidein{from{opacity:0;transform:translateX(3vmin)}to{opacity:1;transform:none}}
+
+/* ---------- team battle board ----------
+   Every column is a size container: type, spacing and column widths inside scale with the
+   column's real width (cqw), so 2, 3 or 4 teams all look designed rather than squeezed.
+   --rows (set by the page = players in the fullest column) shrinks row height and type so
+   up to 8 players per column still fit. Names are additionally auto-fitted and never cut. */
+.board{--rows:4;--rowh:6.6vmin}
+.teams{display:grid;gap:2vmin;flex:1;min-height:0;grid-auto-flow:column;grid-auto-columns:1fr}
+.team-col{container-type:inline-size;min-width:0;--rows:4;--rowh:clamp(3.8vmin,calc(46vmin / var(--rows)),6.6vmin);background:var(--panel);border:.25vmin solid var(--line);border-radius:1.6vmin;display:flex;flex-direction:column;min-height:0;overflow:hidden;position:relative}
+.team-col::before{content:"";position:absolute;inset:0 0 auto 0;height:1.4vmin;background:var(--tc)}
+.team-head{display:flex;align-items:baseline;justify-content:space-between;gap:2cqw;padding:clamp(4.2vmin,10.5cqw,7vmin) 4cqw .4vmin}
+.team-rank{position:absolute;top:2.5vmin;left:4cqw;font-family:var(--display);font-size:clamp(1.5vmin,4.4cqw,2.5vmin);letter-spacing:.08em;line-height:1;color:#0b0f17;background:var(--tc);border-radius:.6vmin;padding:calc(.2em + var(--nudge-display)) .6em calc(.2em - var(--nudge-display))}
+.team-col.lead{box-shadow:inset 0 0 0 .45vmin var(--tc)}
+.team-name{font-family:var(--display);font-size:clamp(3.2vmin,11cqw,6vmin);color:var(--tc);letter-spacing:.05em;line-height:1.25;white-space:nowrap;min-width:0;overflow:visible}
+.team-score{font-family:var(--display);font-size:clamp(8vmin,30cqw,17vmin);line-height:.85;color:var(--tc);font-variant-numeric:tabular-nums;flex:none;transform-origin:right bottom}
+.team-col.dense .team-score{font-size:clamp(7vmin,22cqw,12vmin)}
+.team-col.dense .team-head{padding-top:clamp(3.6vmin,8cqw,5.4vmin)}
+.team-sub.empty{padding:0 0 1.2vmin}
+.team-sub{padding:0 4cqw .8vmin;font-size:clamp(1.3vmin,3.6cqw,2vmin);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.roster{display:flex;flex-direction:column;padding:0 2cqw 1.2vmin;gap:.4vmin;overflow:hidden;min-height:0}
+.roster-head,.p-row{display:grid;grid-template-columns:5cqw minmax(0,1fr) 15cqw 15cqw 22cqw;align-items:center;gap:1.5cqw;padding:.4vmin 2cqw}
+.teams-4 .roster-head,.teams-4 .p-row{grid-template-columns:5cqw minmax(0,1fr) 17cqw 17cqw}
+.teams-4 .p-status,.teams-4 .roster-head span:nth-child(5){display:none}
+.roster-head{font-size:clamp(1.2vmin,3.4cqw,1.75vmin);font-weight:800;letter-spacing:.04em;color:var(--ink3);text-transform:uppercase}
+.roster-head span:nth-child(n+3){text-align:center}
+.p-row{background:rgba(255,255,255,.035);border-radius:1vmin;height:var(--rowh);padding-top:0;padding-bottom:0}
+.p-row.leader{background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 .2vmin var(--tc)}
+.p-row.out{opacity:.45}
+.p-rank{font-family:var(--display);font-size:clamp(1.5vmin,5cqw,2.8vmin);color:var(--ink3);text-align:center}
+.p-name{font-family:var(--display);font-size:min(clamp(2.4vmin,9.5cqw,4.4vmin),calc(var(--rowh) * .68));min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.02em;line-height:1.25}
+.p-name small{display:block;font-family:var(--body);font-size:.45em;font-weight:600;letter-spacing:.1em;color:var(--ink2);text-transform:uppercase;margin-top:.15em}
+.p-k,.p-d{font-family:var(--display);font-size:min(clamp(2.6vmin,10.5cqw,4.8vmin),calc(var(--rowh) * .74));text-align:center;font-variant-numeric:tabular-nums;line-height:1}
+.p-k{color:var(--ink)} .p-d{color:var(--ink2)}
+.p-status{text-align:center;font-size:clamp(1.3vmin,4cqw,2vmin);font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.p-status .lives{letter-spacing:0;font-size:clamp(1.1vmin,3.6cqw,1.8vmin);color:var(--bad);white-space:nowrap}
+.p-status .lives .off{color:var(--ink3)}
+.p-status .out{color:var(--ink3)}
+.p-status .alive{color:var(--ink2)}
+
+/* ---------- royale board ---------- */
+.royale{--rows:6;--rowh:clamp(3.5vmin,calc(58vmin / var(--rows)),7.4vmin);display:flex;flex-direction:column;gap:min(.6vmin,calc(var(--rowh) * .08));flex:1;min-height:0}
+.royale .r-head{display:grid;grid-template-columns:5vmin 1fr 12vmin 12vmin 16vmin;gap:1vmin;padding:.4vmin 2vmin;font-size:2.1vmin;font-weight:800;letter-spacing:.14em;color:var(--ink3);text-transform:uppercase}
+.royale .r-head span:nth-child(n+3){text-align:center}
+.r-row{display:grid;grid-template-columns:5vmin 1fr 12vmin 12vmin 16vmin;gap:1vmin;align-items:center;padding:0 2vmin;background:var(--panel);border:.2vmin solid var(--line);border-radius:1.2vmin;height:var(--rowh)}
+.r-row{box-shadow:inset .7vmin 0 0 0 var(--tc,transparent);padding-left:calc(2vmin + .7vmin)}
+.r-row.leader{box-shadow:inset .7vmin 0 0 0 var(--tc,transparent),inset 0 0 0 .25vmin var(--accent)}
+.r-row.ffa.leader{box-shadow:inset .7vmin 0 0 0 var(--tc),inset 0 0 0 .28vmin var(--tc)}
+.r-row.out{opacity:.4}
+.r-row .p-name{font-size:min(5vmin,calc(var(--rowh) * .66))}
+.r-row .p-k,.r-row .p-d{font-size:min(5.6vmin,calc(var(--rowh) * .74))}
+.r-row .p-life{text-align:center;font-family:var(--display);font-size:min(3.4vmin,calc(var(--rowh) * .46));letter-spacing:.06em}
+.r-row .p-life.alive{color:var(--ink2)} .r-row .p-life.out{color:var(--ink3)}
+.r-row .p-life .lives{font-size:min(2.8vmin,calc(var(--rowh) * .38));letter-spacing:.1em;color:var(--bad)} .r-row .p-life .lives .off{color:var(--ink3)}
+
+/* ---------- lobby / idle ---------- */
+.center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:2.6vmin;min-height:0;padding:2vmin 4vmin}
+.center .title{font-family:var(--display);font-size:12vmin;line-height:.95;letter-spacing:.03em}
+.center .sub{font-size:3.4vmin;color:var(--ink2);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.center .sub b{color:var(--ink)}
+.tiles{display:flex;flex-wrap:wrap;gap:1.6vmin;justify-content:center;max-width:90%;margin-top:2vmin}
+.tile{background:var(--panel);border:.3vmin solid var(--line);box-shadow:inset 1.2vmin 0 0 0 var(--tc,var(--tn));border-radius:1.4vmin;padding:1.6vmin 3vmin 1.6vmin 4.2vmin;font-family:var(--display);font-size:5vmin;line-height:1;min-width:16vmin;text-align:left}
+.tile small{display:block;font-family:var(--body);font-size:1.9vmin;letter-spacing:.12em;color:var(--ink2);text-transform:uppercase;margin-top:.6vmin}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+.brand{font-family:var(--display);font-size:16vmin;line-height:.9;color:var(--ink)}
+.lastgame{margin-top:3vmin;font-size:3vmin;color:var(--ink2)}
+.lastgame b{color:var(--ink)}
+
+/* ---------- game over overlay ---------- */
+.overlay{position:fixed;inset:var(--tb,18vmin) 0 3.8vmin 0;background:var(--bg) radial-gradient(120vmax 60vmax at 50% -20%,#182238 0%,var(--bg) 60%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3.5vmin 5vmin;gap:2.2vmin;overflow:hidden;z-index:20;animation:fadein .35s ease-out}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.overlay.dense{gap:1.6vmin;padding:2.5vmin 4vmin}
+.overlay.dense .go-title{font-size:10vmin}
+.overlay.dense .award{padding:.8vmin 1.2vmin}
+.overlay.dense .award .an{font-size:3.6vmin}
+
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.go-title{font-family:var(--display);font-size:13vmin;line-height:.95;letter-spacing:.03em;text-align:center;text-transform:uppercase;padding:.4vmin 0;animation:settle .5s cubic-bezier(.2,.8,.2,1)}
+@keyframes settle{from{opacity:0;transform:scale(.9) translateY(1.5vmin)}to{opacity:1;transform:none}}
+.go-sub{font-size:3.2vmin;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2);margin-top:-.8vmin}
+.awards{display:flex;flex-wrap:nowrap;gap:1.2vmin;justify-content:center;width:100%;max-width:170vmin;margin-top:.6vmin;animation:rise .5s ease-out}
+@keyframes rise{from{opacity:0;transform:translateY(2vmin)}to{opacity:1;transform:none}}
+.award{background:var(--panel);border:.25vmin solid var(--line);border-radius:1.4vmin;padding:1.2vmin 1.4vmin 1.3vmin;text-align:center;flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:.25vmin}
+/* the text lines span the card (a centred flex child would otherwise grow to its own text and spill
+   past the border), so shrink-to-fit can measure them against the card's real width */
+.award .al,.award .an,.award .av{align-self:stretch;width:100%;min-width:0}
+.award .medal{width:3.4vmin;height:3.4vmin;color:var(--ink);margin-bottom:.3vmin}
+.award .al{font-size:1.9vmin;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink);white-space:nowrap;overflow:hidden}
+.award .an{font-family:var(--display);font-size:4.4vmin;line-height:1.05;margin:.4vmin 0 .2vmin;white-space:nowrap;overflow:hidden}
+.award .av{font-size:2.1vmin;color:var(--ink2);font-weight:600;white-space:nowrap;overflow:hidden}
+.award.mvp{border-color:var(--accent);box-shadow:0 0 3vmin rgba(255,122,26,.25)}
+.final{--cols:2;--per-col:8;display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));grid-template-rows:auto repeat(var(--per-col),var(--frowh));grid-auto-flow:column;align-content:start;gap:1.2vmin;width:100%;max-width:170vmin;overflow:hidden;min-height:0;flex:0 1 auto;animation:rise .6s ease-out}
+.final{--frowh:4.8vmin}
+.final .f-row{display:grid;grid-template-columns:4vmin minmax(0,1fr) 7vmin 7vmin 10vmin;align-items:center;gap:1vmin;height:var(--frowh);padding:0 1.4vmin;background:rgba(255,255,255,.04);border-radius:1vmin;box-shadow:inset .9vmin 0 0 0 var(--tc,var(--tn));padding-left:calc(1.4vmin + .9vmin)}
+.final .f-row .p-name{font-size:min(3.8vmin,calc(var(--frowh) * .72))}
+.final .f-row .p-k,.final .f-row .p-d{font-size:min(3.8vmin,calc(var(--frowh) * .75))}
+.final .f-row .f-kd{font-family:var(--display);font-size:min(2.8vmin,calc(var(--frowh) * .55));text-align:center;color:var(--ink2)}
+.final .f-head{grid-row:1;grid-column:1/-1;display:flex;justify-content:space-between;padding:0 1.4vmin;font-size:1.9vmin;font-weight:800;letter-spacing:.14em;color:var(--ink3);text-transform:uppercase}
+
+/* ---------- full timeline mode ---------- */
+.timeline-full{position:fixed;inset:var(--tb,18vmin) 0 3.8vmin 0;background:var(--bg);overflow:hidden;padding:2.6vmin 4vmin;display:flex;flex-direction:column;z-index:30}
+.timeline-full h2{font-family:var(--display);font-size:4.4vmin;letter-spacing:.15em;color:var(--ink2);margin-bottom:1vmin}
+.timeline-full ol{list-style:none;display:flex;flex-direction:column;overflow:hidden}
+.timeline-full li{display:grid;grid-template-columns:12vmin 10vmin 1fr;gap:2vmin;align-items:baseline;padding:.7vmin 0;border-bottom:.15vmin solid var(--line);font-size:3vmin}
+.timeline-full li .t{font-family:var(--display);color:var(--ink3);font-variant-numeric:tabular-nums}
+.timeline-full li .w{font-size:2.2vmin;color:var(--ink3);font-variant-numeric:tabular-nums}
+.timeline-full li.callout .txt{color:var(--ink);font-family:var(--display);font-size:3.4vmin}
+.timeline-full li.phase .txt{font-family:var(--display);font-size:3.4vmin}
+.timeline-full li .txt .sub{font-family:var(--body);font-size:2.2vmin}
+.timeline-full li .txt{font-size:3vmin}
+
+/* ---------- status bar ---------- */
+.statusbar{display:flex;align-items:center;gap:1.4vmin;padding:0 3vmin;font-size:1.85vmin;color:var(--ink3);border-top:.2vmin solid var(--line);background:rgba(0,0,0,.4);letter-spacing:.06em}
+.statusbar #dongleDot{width:1.4vmin;height:1.4vmin;border-radius:50%;background:var(--bad)}
+.statusbar #dongleDot.ok{background:var(--good)} .statusbar #dongleDot.quiet{background:var(--warn)}
+.statusbar #hint{margin-left:auto;opacity:.6}
+.statusbar .sim{color:var(--ink2);font-weight:700}
+
+/* ---------- unassigned strip / progress / stats ---------- */
+.unassigned{margin-top:1.4vmin;display:flex;flex-wrap:wrap;align-items:center;gap:1.2vmin;padding:1vmin 1.6vmin;border:.2vmin dashed var(--line);border-radius:1.2vmin;font-family:var(--display);font-size:3vmin;line-height:1}
+.unassigned .ul{font-size:1.9vmin;font-family:var(--body);font-weight:800;letter-spacing:.14em;color:var(--ink3);margin-right:1vmin}
+.unassigned .up{color:var(--ink2)} .unassigned .up b{color:var(--ink)} .unassigned .up i{color:var(--ink3);font-style:normal} .unassigned .up.out{opacity:.45}
+.prog{position:relative;margin:0 2.4vmin 1vmin;height:2.8vmin;background:rgba(255,255,255,.06);border-radius:1.4vmin;overflow:hidden}
+.prog .bar{height:100%;background:var(--tc,var(--accent));opacity:.85;transition:width .6s ease}
+.prog span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:2.2vmin;color:#fff;text-shadow:0 0 .6vmin #000}
+.prog.player{margin:0 0 1vmin;--tc:var(--accent)}
+.stats{--rows:6;--rowh:clamp(3.3vmin,calc(60vmin / var(--rows)),6.4vmin);display:flex;flex-direction:column;gap:min(.5vmin,calc(var(--rowh) * .07));flex:1;min-height:0;overflow:hidden}
+.s-head,.s-row{display:grid;grid-template-columns:3.4vmin minmax(0,1.6fr) 7vmin 7vmin 7vmin 9vmin 9vmin minmax(0,1fr) minmax(0,1fr) 9.5vmin;gap:.8vmin;align-items:center;padding:.5vmin 1.6vmin}
+.s-head{font-size:1.75vmin;font-weight:800;letter-spacing:.02em;color:var(--ink3);text-transform:uppercase}
+.s-head span:nth-child(n+3){text-align:center}
+.s-row{background:var(--panel);border:.2vmin solid var(--line);box-shadow:inset .9vmin 0 0 0 var(--tc,var(--tn));border-radius:1vmin;height:var(--rowh);padding-top:0;padding-bottom:0;padding-left:calc(1.6vmin + .9vmin)}
+.s-row.out{opacity:.45}
+.s-row .p-name{font-size:min(4vmin,calc(var(--rowh) * .6));line-height:1.05}
+.s-row .p-name small{font-size:.42em;margin-top:0;letter-spacing:.06em}
+.s-row .num{font-family:var(--display);font-size:min(4vmin,calc(var(--rowh) * .62));text-align:center;font-variant-numeric:tabular-nums}
+.s-row .num.dim{color:var(--ink2)} .s-row .num.small{font-size:min(2.8vmin,calc(var(--rowh) * .44));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s-row .num .out{color:var(--ink3)}
+.s-row .num .lives{font-size:1.7vmin;letter-spacing:0;color:var(--bad);white-space:nowrap}
+
+/* team carried over from the previous game: shown, but flagged until the radio confirms it */
+.p-row.carried,.p-row.guess{background:repeating-linear-gradient(135deg,rgba(255,255,255,.035) 0 1vmin,rgba(255,255,255,.06) 1vmin 2vmin)}
+.p-name .guess{display:inline-block;margin-left:.8vmin;font-family:var(--body);font-size:2.2vmin;font-weight:800;color:var(--ink3);vertical-align:middle;opacity:.9}
+/* column headers must carry the same borders/padding as their rows so they line up */
+.s-head{border:.2vmin solid transparent;padding-left:calc(1.6vmin + .9vmin)}
+.royale .r-head{border:.2vmin solid transparent;padding-left:calc(2vmin + .7vmin)}
+.teams-4 .roster-head span:nth-child(5){display:none}
+
+/* ---------- motion: every change animates ---------- */
+[data-f].bump{animation:bump .6s cubic-bezier(.2,.9,.3,1.25)}
+@keyframes bump{0%{transform:scale(1)}35%{transform:scale(1.3);color:#fff}100%{transform:scale(1)}}
+.team-score.bump{animation:scorepop .75s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes scorepop{0%{transform:scale(1)}30%{transform:scale(1.14);filter:brightness(1.7)}100%{transform:scale(1);filter:none}}
+.p-row.changed,.r-row.changed,.s-row.changed{animation:rowglow .9s ease-out}
+@keyframes rowglow{0%{box-shadow:inset 0 0 0 .3vmin rgba(255,255,255,.55);background-color:rgba(255,255,255,.14)}100%{}}
+.p-row.enter,.r-row.enter,.s-row.enter,.tile.enter,.up.enter{animation:rowin .5s cubic-bezier(.2,.8,.2,1)}
+@keyframes rowin{from{opacity:0;transform:translateY(-2.4vmin)}to{opacity:1;transform:none}}
+.alive.bump{animation:bump .6s cubic-bezier(.2,.9,.3,1.25);transform-origin:right center}
+.p-status,.p-life,.num,.p-k,.p-d{transform-origin:center}
+
+/* ---------- optical centering (values measured at runtime by calibrateInk) ---------- */
+:root{--nudge-display:0em;--nudge-body:0em;--nudge-hearts:0em}
+.p-name,.p-k,.p-d,.p-rank,.f-kd,.num:not(:has(.lives)),.p-life>.alive,.p-life>.out,.unassigned .up{position:relative;top:var(--nudge-display)}
+.p-status>.alive,.p-status>.out{position:relative;top:var(--nudge-body)}
+.lives{position:relative;top:var(--nudge-hearts);display:inline-block}
+
+/* ---------- hearts on show: the KO'd column would just repeat them ---------- */
+.teams.hearts:not(.no-status):not(.teams-4) .roster-head,.teams.hearts:not(.no-status):not(.teams-4) .p-row{grid-template-columns:5cqw minmax(0,1fr) 15cqw 26cqw}
+.teams.hearts:not(.no-status):not(.teams-4) .p-d,.teams.hearts:not(.no-status):not(.teams-4) .roster-head span:nth-child(4){display:none}
+.royale.hearts:not(.no-status) .r-head,.royale.hearts:not(.no-status) .r-row{grid-template-columns:5vmin 1fr 12vmin 16vmin}
+.royale.hearts:not(.no-status) .p-d,.royale.hearts:not(.no-status) .r-head span:nth-child(4){display:none}
+/* Battle Royale is one life: being KO'd is the OUT status, so that column goes (and the ratio at the finish) */
+.royale.onelife .r-head,.royale.onelife .r-row{grid-template-columns:5vmin 1fr 12vmin 16vmin}
+.royale.onelife .p-d,.royale.onelife .r-head span:nth-child(4){display:none}
+.final.onelife .f-row{grid-template-columns:4vmin minmax(0,1fr) 9vmin}
+.final.onelife .p-d,.final.onelife .f-kd{display:none}
+/* Battle Royale in squads: one life each, so the respawns column goes */
+.teams.onelife .roster-head,.teams.onelife .p-row{grid-template-columns:5cqw minmax(0,1fr) 15cqw 26cqw}
+.teams.onelife .p-d,.teams.onelife .roster-head span:nth-child(4){display:none}
+/* the IN count sits under the list, centred */
+.team-foot{margin-top:.5vmin;padding:.2vmin 4cqw .6vmin;text-align:center;font-size:clamp(1.3vmin,3.6cqw,2vmin);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);white-space:nowrap}
+/* vocabulary words keep their own case ("KOs", "KO'd") inside otherwise uppercase headers */
+.alive,.roster-head,.s-head,.royale .r-head,.final .f-head,.go-sub,.lastgame{text-transform:none}
+
+/* ---------- no status column when nobody can go out (unlimited hearts) ---------- */
+.teams.no-status .roster-head,.teams.no-status .p-row{grid-template-columns:5cqw minmax(0,1fr) 17cqw 17cqw}
+.teams.no-status .p-status,.teams.no-status .roster-head span:nth-child(5){display:none}
+.royale.no-status .r-head,.royale.no-status .r-row{grid-template-columns:5vmin 1fr 12vmin 12vmin}
+.royale.no-status .p-life,.royale.no-status .r-head span:nth-child(5){display:none}
+.stats.no-status .s-head,.stats.no-status .s-row{grid-template-columns:3.4vmin minmax(0,1.6fr) 7vmin 7vmin 7vmin 9vmin 9vmin minmax(0,1fr) minmax(0,1fr)}
+.stats.no-status [data-f=lives],.stats.no-status .s-head span:nth-child(10){display:none}
+.stats.onelife .s-head,.stats.onelife .s-row{grid-template-columns:3.4vmin minmax(0,1.6fr) 7vmin 7vmin 9vmin 9vmin minmax(0,1fr) minmax(0,1fr) 9.5vmin}
+.stats.onelife [data-f=deaths],.stats.onelife .s-head span:nth-child(4){display:none}
+
+/* a row on the move is lifted above its neighbours so the glide reads clearly */
+.p-row.moving{position:relative;z-index:3;box-shadow:0 1vmin 3vmin rgba(0,0,0,.55),0 0 0 .2vmin rgba(255,255,255,.12)}
+.r-row.moving{position:relative;z-index:3;box-shadow:inset .7vmin 0 0 0 var(--tc,transparent),0 1vmin 3vmin rgba(0,0,0,.55),0 0 0 .2vmin rgba(255,255,255,.12)}
+.s-row.moving{position:relative;z-index:3;box-shadow:inset .9vmin 0 0 0 var(--tc,var(--tn)),0 1vmin 3vmin rgba(0,0,0,.55),0 0 0 .2vmin rgba(255,255,255,.12)}
+
+.view-enter{animation:viewin .4s ease-out}
+@keyframes viewin{from{opacity:0}to{opacity:1}}
+
+/* ---------- team-grouped final standings ---------- */
+.final.team-final{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));grid-template-rows:auto 1fr;grid-auto-flow:row;gap:1.2vmin 1.6vmin;align-content:start}
+.final.team-final .f-head{grid-row:1;grid-column:1/-1}
+.final.team-final .f-team{grid-row:2;display:flex;flex-direction:column;gap:1.2vmin;min-width:0}
+.f-team-head{display:flex;align-items:baseline;gap:1.2vmin;padding:0 .6vmin .2vmin;border-bottom:.3vmin solid var(--tc);font-family:var(--display);color:var(--tc)}
+.f-team-head .place{font-size:1.9vmin;font-family:var(--body);font-weight:800;letter-spacing:.1em;color:#0b0f17;background:var(--tc);border-radius:.5vmin;padding:.12em .5em .06em;align-self:center}
+.f-team-head .tname{font-size:3.6vmin;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.f-team-head .tscore{font-size:4.6vmin;line-height:1}
+.final .f-row.out{opacity:.5}
+
+/* ---------- placeholder column while the second team is silent ---------- */
+.team-col.placeholder{border-style:dashed;border-color:var(--ink3);background:transparent}
+.team-col.placeholder::before{background:var(--ink3);opacity:.5}
+.team-col.placeholder .team-name,.team-col.placeholder .team-score{color:var(--ink3)}
+.team-col.placeholder .waiting{margin:auto;padding:0 4cqw 8vmin;text-align:center;font-size:clamp(1.6vmin,4.2cqw,2.4vmin);font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+
+/* ---------- host mode controls (this board as the admin headset) ---------- */
+.chip.ctl{cursor:pointer;border-color:var(--ink2);color:var(--ink)}
+.chip.ctl:hover{background:rgba(255,255,255,.14)}
+.chip.hosting{border-style:dashed;color:var(--ink3)}
+.hostctl{display:flex;gap:1vmin;align-items:center;justify-content:flex-end;flex-wrap:wrap;margin-top:.2vmin}
+.hostbtn{font-family:var(--display);font-size:3vmin;letter-spacing:.06em;text-transform:uppercase;padding:.5vmin 2.2vmin;border:.3vmin solid var(--ink);border-radius:1.2vmin;background:transparent;color:var(--ink);cursor:pointer;line-height:1.1}
+.hostbtn:hover{background:rgba(255,255,255,.12)}
+.hostbtn.quiet{border-color:var(--ink3);color:var(--ink2);font-size:2.2vmin}
+.hostbtn.arm{border-color:var(--ink);color:var(--ink);background:rgba(255,255,255,.18);animation:breathe 1.2s ease-in-out infinite}
+.hosthint{font-size:1.8vmin;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase}
+
+.team-score.lone{visibility:hidden}
+
+/* ---------- lone wolves: one card per free-for-all player, stacked in the free-for-all column ---------- */
+.team-col.wolves .wolf-stack{display:flex;flex-direction:column;gap:1vmin;padding:0 3cqw 1.4vmin;min-height:0;flex:1}
+.wolf{display:grid;grid-template-columns:5cqw minmax(0,1fr) 22cqw 16cqw;align-items:center;gap:1.5cqw;padding:.8vmin 3cqw;border-radius:1.2vmin;background:rgba(255,255,255,.05);box-shadow:inset 0 .6vmin 0 0 var(--tc);min-height:0;flex:0 1 calc(var(--rowh,9vmin) * 1.7);overflow:hidden}
+.wolf.out{opacity:.45}
+.wolf .w-rank{font-family:var(--display);font-size:clamp(1.5vmin,5cqw,2.8vmin);color:var(--ink3);text-align:center;position:relative;top:var(--nudge-display)}
+.wolf .w-name{font-family:var(--display);font-size:min(clamp(2.6vmin,10cqw,4.6vmin),calc(var(--rowh,9vmin) * .8));color:var(--tc);white-space:nowrap;overflow:hidden;min-width:0;line-height:1.25;position:relative;top:var(--nudge-display)}
+.wolf .w-status{text-align:center;font-size:clamp(1.3vmin,4cqw,2vmin);font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.wolf .w-status .lives{letter-spacing:0;font-size:clamp(1.1vmin,3.6cqw,1.8vmin);color:var(--bad);white-space:nowrap}
+.wolf .w-status .lives .off{color:var(--ink3)}
+.wolf .w-status .out{color:var(--ink3)} .wolf .w-status .alive{color:var(--ink2)}
+.wolf .w-score{font-family:var(--display);font-size:min(clamp(3.2vmin,13cqw,6vmin),calc(var(--rowh,9vmin) * .95));text-align:right;color:var(--tc);position:relative;top:var(--nudge-display)}
+.teams.hearts .wolf{grid-template-columns:5cqw minmax(0,1fr) 26cqw 16cqw}
+
+.hostbtn>span{display:inline-block;position:relative;top:var(--nudge-display)}   /* the condensed face sits high: use the measured nudge */
+.feed .storm{color:#8fd3ff;letter-spacing:.06em;font-weight:700}
+.target{display:flex;align-items:center;gap:1vmin;padding:.2vmin 0 .6vmin;font-size:1.8vmin;font-weight:800;letter-spacing:.1em;color:var(--ink2)}
+.target-bar{flex:1;height:.9vmin;border-radius:.45vmin;background:rgba(255,255,255,.08);overflow:hidden}
+.target-fill{height:100%;background:var(--tc,var(--ink));border-radius:.45vmin;transition:width .9s cubic-bezier(.45,.05,.2,1)}
+.target-txt{font-variant-numeric:tabular-nums;white-space:nowrap}
+.center .sub.warn{color:#ffb84d}
+/* host settings: fixed two-row grid of segmented toggles. The selected segment is filled (light on
+   dark, the standard look) so the choice reads from across the yard; nothing changes size on a click. */
+.hc-wrap{display:flex;flex-wrap:wrap;gap:.7vmin 1vmin;align-items:center;min-width:0}
+.hc-wrap .chip{height:3.6vmin;box-sizing:border-box;display:inline-flex;align-items:center}
+/* the control's own background is the line colour; each option paints over it and the gaps are the thin lines */
+.seg{--seg-line:rgba(255,255,255,.4);--seg-bg:#04060a;display:inline-flex;align-items:stretch;gap:.16vmin;height:3.6vmin;box-sizing:border-box;border:.16vmin solid var(--seg-line);border-radius:1vmin;overflow:hidden;background:var(--seg-line);font-size:1.75vmin;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink2);white-space:nowrap;line-height:1}
+.seg>*{display:inline-flex;align-items:center;background:var(--seg-bg)}
+.hc-pair{display:inline-flex;gap:1vmin;flex-wrap:nowrap}
+.segb{border:0;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;line-height:1;padding:0 1.1vmin;cursor:pointer;transition:background .25s ease,color .25s ease}
+.segb.on,.stepper.on{background:var(--ink);color:var(--bg)}
+.stepper{padding:0 .3vmin;cursor:pointer;transition:background .25s ease,color .25s ease}   /* tapping the number picks it */
+.stepper .arrow{background:none;border:0;color:inherit;padding:0 .7vmin;height:100%;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.stepper .arrow svg{display:block;width:1.1vmin;height:1.8vmin;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.stepper .val{display:inline-flex;align-items:center;justify-content:center;min-width:2.4ch;font-variant-numeric:tabular-nums;font-size:1.75vmin;line-height:1}   /* not .num: that class carries the display-font nudge */
+.stepper i{font-style:normal;font-size:1.75vmin;line-height:1;padding:0 .2vmin 0 .3vmin}
+.stepper i.pre{padding:0 .4vmin 0 .1vmin}
+/* a running game: every control collapses to its chosen value. The elements stay put, so the
+   unchosen options fold away with a transition rather than a cut. */
+.segb,.stepper,.stepper .arrow{max-width:60vmin;transition:max-width .55s cubic-bezier(.45,.05,.2,1),padding .55s cubic-bezier(.45,.05,.2,1),opacity .3s ease}
+.seg{max-width:90vmin;transition:gap .55s cubic-bezier(.45,.05,.2,1),max-width .55s cubic-bezier(.45,.05,.2,1),opacity .3s ease,margin .55s cubic-bezier(.45,.05,.2,1)}
+.collapsed .seg{gap:0}
+.collapsed .segb,.collapsed .stepper,.collapsed .arrow{cursor:default;pointer-events:none}
+.collapsed .segb:not(.on),.collapsed .stepper:not(.on),.collapsed .stepper .arrow{max-width:0;padding:0;opacity:0;overflow:hidden}
+.collapsed .seg[data-k="target"]:has(.segb.on){max-width:0;opacity:0;margin-left:-1vmin;border-width:0}   /* "no target" says nothing mid-game */
+/* a team game where everyone so far picked free-for-all: the wolves' cards fill the board, two abreast */
+.teams.wolves-only .team-col.wolves .wolf-stack{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;gap:1vmin 1.4vmin}
+.teams.wolves-only .wolf{grid-template-columns:2.6cqw minmax(0,1fr) 12cqw 7cqw;padding:.9vmin 1.6cqw}
+.teams.wolves-only .wolf .w-name{font-size:min(clamp(2.6vmin,5cqw,4.6vmin),calc(var(--rowh,9vmin) * .8))}
+.teams.wolves-only .wolf .w-rank{font-size:clamp(1.5vmin,2.4cqw,2.8vmin)}
+.teams.wolves-only .wolf .w-score{font-size:min(clamp(3.2vmin,6cqw,6vmin),calc(var(--rowh,9vmin) * .95))}
+.teams.wolves-only .wolf .w-status{font-size:clamp(1.3vmin,2cqw,2vmin)} .teams.wolves-only .wolf .w-status .lives{font-size:clamp(1.1vmin,1.8cqw,1.8vmin)}

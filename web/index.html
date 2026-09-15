@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SWAPTX Arena</title>
+<link rel="stylesheet" href="/static/styles.css?v=__V__">
+</head>
+<body>
+<div id="wall" class="wall phase-idle">
+  <header class="topbar">
+    <div class="tb-left">
+      <div class="mode-badge" id="modeBadge">SWAPTX ARENA</div>
+      <div class="chips" id="settingChips"></div>
+    </div>
+    <div class="tb-center">
+      <div class="clock" id="clock">--:--</div>
+      <div class="clock-label" id="clockLabel">WAITING</div>
+    </div>
+    <div class="tb-right">
+      <div class="phase-badge" id="phaseBadge"><span id="phaseText">IDLE</span></div>
+      <div class="alive" id="aliveCount"></div>
+      <div class="hostctl" id="hostCtl"></div>
+    </div>
+  </header>
+  <main class="body">
+    <section class="board" id="board"></section>
+    <aside class="feed"><h2 id="feedTitle">LIVE FEED</h2><ol id="feed"></ol></aside>
+  </main>
+  <footer class="statusbar">
+    <span id="dongleDot"></span><span id="dongleText">connecting…</span>
+    <span id="hint">F fullscreen · 1 board · 2 stats · T timeline · S sound · A admin</span>
+  </footer>
+  <div id="overlay" class="overlay hidden"></div>
+  <div id="timelineFull" class="timeline-full hidden"><h2>FULL TIMELINE</h2><ol id="timelineList"></ol></div>
+</div>
+<script src="/static/common.js?v=__V__"></script>
+<script src="/static/wall.js?v=__V__"></script>
+</body>
+</html>

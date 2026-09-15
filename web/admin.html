@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SWAPTX Admin</title>
+<style>
+:root{--bg:#0b0f17;--panel:#131a28;--line:#243049;--ink:#eef2f8;--ink2:#9fb0c9;--ink3:#64748b;--accent:#ff7a1a;--good:#3ddc6a;--warn:#ffb020;--bad:#ff3b3b;--t0:#ff3b3b;--t1:#2f8cff;--t2:#ffd21f;--t3:#3ddc6a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 "Avenir Next","Helvetica Neue",system-ui,sans-serif}
+header{display:flex;align-items:center;gap:14px;padding:12px 16px;border-bottom:1px solid var(--line);background:#0e1420;position:sticky;top:0;z-index:5;flex-wrap:wrap}
+header h1{font-size:18px;margin:0;letter-spacing:.06em;text-transform:uppercase}
+header .st{font-size:13px;color:var(--ink2)} header .st b{color:var(--ink)}
+header a{color:var(--accent);text-decoration:none;font-weight:600;margin-left:auto}
+nav{display:flex;gap:4px;padding:8px 12px;overflow-x:auto;border-bottom:1px solid var(--line)}
+nav button{background:none;border:1px solid var(--line);color:var(--ink2);padding:8px 14px;border-radius:8px;font-weight:700;cursor:pointer;white-space:nowrap;font-size:14px}
+nav button.on{background:var(--panel);color:var(--ink);border-color:var(--accent)}
+main{padding:14px;max-width:1100px;margin:0 auto}
+section{display:none}section.on{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
+.card h2{margin:0 0 10px;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.card p.help{color:var(--ink2);font-size:14px;margin:0 0 10px}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}th{color:var(--ink3);font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+input,select,textarea{background:#0b101a;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:9px 10px;font-size:16px;width:100%}
+input[type=checkbox]{width:auto;transform:scale(1.3);margin:0 8px 0 2px}
+button.b{background:var(--accent);color:#180a02;border:none;border-radius:8px;padding:10px 16px;font-weight:800;font-size:15px;cursor:pointer}
+button.b.sec{background:#243049;color:var(--ink)} button.b.danger{background:var(--bad);color:#fff} button.b.sm{padding:6px 10px;font-size:13px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}.row label{font-size:13px;color:var(--ink2);display:block;margin-bottom:4px}.row>div{flex:1;min-width:140px}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700;background:#243049;color:var(--ink2)}
+.pill.ok{background:rgba(61,220,106,.18);color:var(--good)}.pill.bad{background:rgba(255,59,59,.18);color:var(--bad)}.pill.warn{background:rgba(255,176,32,.18);color:var(--warn)}
+.t0{color:var(--t0)}.t1{color:var(--t1)}.t2{color:var(--t2)}.t3{color:var(--t3)}
+pre{background:#0b101a;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:12px;overflow:auto;max-height:420px;margin:0}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.frames tr.kill{background:rgba(255,122,26,.06)}
+.tok{display:inline-block;background:#0b101a;border:1px solid var(--line);border-radius:6px;padding:4px 6px;margin:2px;font-size:12px;vertical-align:top;min-width:120px}
+.tok b{display:block;color:var(--accent)} .tok select{font-size:12px;padding:4px}
+.msg{font-size:13px;color:var(--good);min-height:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+small.u{color:var(--ink3)}
+.badge{font-size:11px;padding:1px 6px;border-radius:4px;background:#243049;color:var(--ink2);margin-left:6px}
+.badge.v{background:rgba(61,220,106,.18);color:var(--good)}
+</style>
+</head>
+<body>
+<header><h1>SWAPTX Admin</h1><span class="st" id="hdrStatus">connecting…</span><a href="/" target="_blank">Open wall view ↗</a></header>
+<nav>
+  <button data-tab="players" class="on">Players</button><button data-tab="game">Game</button><button data-tab="dongle">Dongle</button>
+  <button data-tab="timeline">Timeline</button><button data-tab="frames">Raw radio</button><button data-tab="protocol">Protocol lab</button><button data-tab="history">History</button>
+</nav>
+<main>
+<section id="tab-players" class="on">
+  <div class="card"><h2>Team colour → team name</h2>
+    <p class="help">The guns only know four colours. Name the teams and the wall says "SHARKS WIN" instead of "RED TEAM WINS". Leave blank to use the colour.</p>
+    <table id="teamsTable"><thead><tr><th>Colour</th><th>Name</th><th></th></tr></thead><tbody></tbody></table>
+    <div class="msg" id="teamsMsg"></div>
+  </div>
+  <div class="card"><h2>Gun number → player name</h2>
+    <p class="help">Each gun has a persistent player number (set with the reload button, spoken aloud at power-on). Names show on the wall. Team is learned from the radio; set an override only if the wall never shows the right color.</p>
+    <table id="playersTable"><thead><tr><th>#</th><th>Name</th><th>Team</th><th>Radio</th><th>Stats</th><th></th></tr></thead><tbody></tbody></table>
+    <div class="msg" id="playersMsg"></div>
+  </div>
+</section>
+<section id="tab-game">
+  <div class="card"><h2>Host mode</h2>
+    <p class="help">Makes the dongle the admin headset: it takes the host address, acknowledges the guns, and sends the lobby, start and game-over beacons. The settings and the start / end buttons then also appear on the wall.</p>
+    <div class="row"><div><label><input type="checkbox" id="hostEnabled"> Host games from this board</label></div>
+      <div><label>Mode</label><select id="hostMode"><option value="0">Team Battle</option><option value="1">Battle Royale</option></select></div>
+      <div><label>Health / lives</label><select id="hostLives"><option value="1">High (unlimited / 500 HP)</option><option value="0">Low (5 lives / 200 HP)</option></select></div>
+      <div><label>Time</label><select id="hostTime"><option value="0">Off (untimed / no storm)</option><option value="1">On (guns' 10 min timer / storm)</option><option value="custom">Board timer (minutes below)</option></select></div>
+      <div><label>Board timer, minutes</label><input type="number" id="hostMins" min="1" max="60" value="5" style="width:6em"></div>
+      <div><label>First to (Team Battle), kills</label><input type="number" id="hostTarget" min="0" max="99" value="0" style="width:6em"> <small>0 = no target</small></div>
+      <div><label>Lighting</label><select id="hostLighting"><option value="0">Outdoor (high light)</option><option value="1">Indoor (low light)</option></select></div>
+      <div><label>Radio rate</label><select id="hostRate"><option value="0">1 Mbps (safe default)</option><option value="25">MCS1 short GI (what the guns use)</option></select></div></div>
+    <button class="b" id="hostStart">Start game</button> <button class="b danger" id="hostEnd">End game</button> <span class="msg" id="hostMsg"></span>
+  </div>
+  <div class="card"><h2>Current game</h2><div id="gameInfo"></div>
+    <div class="row" style="margin-top:10px">
+      <button class="b sec" id="btnLobby">Open lobby (display)</button>
+      <button class="b" id="btnStartT">Mark game started · Team</button>
+      <button class="b" id="btnStartR">Mark game started · Royale</button>
+      <button class="b danger" id="btnEnd">Mark game over</button>
+      <button class="b sec" id="btnReset">Reset board</button>
+    </div>
+    <p class="help">These only change what the wall shows. The scoreboard is a passive listener: it never sends anything to the guns. Use them when the dongle missed the host's start or end beacon.</p>
+  </div>
+  <div class="card"><h2>Display rules</h2>
+    <p class="help">The host's objective settings (first to 25, 5-minute game, …) are not broadcast on the radio, so tell the wall what you agreed on. Countdowns and "first to N" progress use these. The radio beacon only distinguishes Team Battle (0) and Battle Royale (1); pick Free for All here when that is what the guns are playing. When the guns' own 10-minute timer is on and no game-over beacon arrives, the wall ends the game itself after the grace period if nobody has scored since time ran out.</p>
+    <div class="row"><div><label>Game type</label><select id="rGameType"><option value="auto">Auto (from the host beacon)</option><option value="team">Team Battle</option><option value="royale">Battle Royale</option></select></div>
+      <div><label>Auto-end timed games after (s, 0 = never)</label><input id="cAutoEnd" type="number" min="0" value="45"></div>
+      <div><label><input type="checkbox" id="cHideRoyale" checked> Hide Battle Royale as a game type when this board hosts</label></div>
+      <div><label><input type="checkbox" id="cHideFiveLives" checked> Hide the five-lives option when this board hosts</label></div></div>
+    <div class="row"><div><label>Rule label (shown as a chip)</label><input id="rLabel" placeholder="e.g. First team to 25"></div>
+      <div><label>Time limit (minutes, blank = none)</label><input id="rTime" type="number" min="0" step="1"></div>
+      <div><label>Team kill target</label><input id="rTeamK" type="number" min="0"></div>
+      <div><label>Player kill target</label><input id="rPlayerK" type="number" min="0"></div></div>
+    <div class="row">      <div><label>Lives in a "Low" Team Battle / FFA</label><input id="cLives" type="number" min="1" value="5"></div>
+      <div><label>HP in a "Low" Battle Royale</label><input id="cHpLow" type="number" min="1" value="200"></div>
+      <div><label>HP in a "High" Battle Royale</label><input id="cHpHigh" type="number" min="1" value="500"></div>
+      <div><label>Default timed-game length (s)</label><input id="cTimeLimit" type="number" min="60" value="600"></div></div>
+    <div class="row">      <div><label>Duplicate window (s)</label><input id="cDedup" type="number" step="0.5" min="0"></div></div>
+    <button class="b" id="btnSaveSettings">Save</button> <span class="msg" id="settingsMsg"></span>
+  </div>
+</section>
+<section id="tab-dongle">
+  <div class="card"><h2>Dongle</h2><div id="dongleInfo"></div>
+    <div class="row" style="margin-top:10px"><div><label>Channel</label><select id="dChan"></select></div><div><button class="b sec" id="btnChan">Set channel</button> <button class="b sec" id="btnScan">Auto-scan</button> <button class="b sec" id="btnStatus">Status</button></div></div>
+    <p class="help">SWAPTX gear uses ESP-NOW's default channel 1. The sniffer auto-scans after 2 minutes of silence and locks when it hears traffic. Commands only configure the dongle; it never transmits.</p>
+    <h2 style="margin-top:14px">Log</h2><pre id="dongleLog"></pre>
+  </div>
+</section>
+<section id="tab-timeline"><div class="card"><h2>Timeline (all events, including hidden ones)</h2><table id="tlTable"><thead><tr><th>Time</th><th>T+</th><th>Kind</th><th>Event</th><th>Raw</th></tr></thead><tbody></tbody></table></div></section>
+<section id="tab-frames"><div class="card"><h2>Raw radio frames</h2><p class="help">Everything the dongle heard, newest first. Kill announcements are highlighted.</p><button class="b sec sm" id="btnFramesRefresh">Refresh</button><table class="frames" id="framesTable"><thead><tr><th>Time</th><th>From → To</th><th>RSSI</th><th>Decoded</th><th>Payload</th></tr></thead><tbody></tbody></table></div></section>
+<section id="tab-protocol">
+  <div class="card"><h2>Protocol lab</h2>
+    <p class="help">Opcodes seen on the air with per-token value histograms. Defaults come from the LaserTagMods source; fields marked <span class="badge">inferred</span> are best guesses. Change a token's role (e.g. mark the victim's number in a kill announcement) and the whole history is recomputed from the stored frames. "= sender" counts how often a token equals the sending player's number (0-based / 1-based) - a strong hint.</p>
+    <div id="protoLab"></div>
+    <div class="row"><button class="b" id="btnSaveProto">Save mapping &amp; recompute</button><button class="b sec" id="btnResetProto">Reset to defaults</button><span class="msg" id="protoMsg"></span></div>
+  </div>
+</section>
+<section id="tab-history"><div class="card"><h2>Games</h2><table id="gamesTable"><thead><tr><th>Started</th><th>Mode</th><th>Length</th><th>Winner</th><th>Kills</th><th>Status</th><th></th></tr></thead><tbody></tbody></table><pre id="gameDetail" class="hidden"></pre></div></section>
+</main>
+<script src="/static/common.js?v=__V__"></script>
+<script src="/static/admin.js?v=__V__"></script>
+</body>
+</html>
