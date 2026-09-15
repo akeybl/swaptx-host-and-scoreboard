@@ -167,6 +167,9 @@
     const g = snap.game, c = g.clock || {};
     const el = $("clock"), lbl = $("clockLabel");
     el.className = "clock";
+    const bar = $("clockBar"), fill = $("clockFill");
+    const barOn = !!(c.limit_s && c.elapsed_s != null && g.phase === "live");
+    if (bar) bar.classList.toggle("on", barOn);
     if (g.phase === "idle") { el.textContent = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); lbl.textContent = "WAITING FOR A GAME"; return; }
     if (g.phase === "lobby") { el.textContent = "READY"; lbl.textContent = "PICK TEAMS · HOST STARTS"; return; }
     let elapsed = c.elapsed_s;
@@ -174,6 +177,7 @@
     if (elapsed == null) { el.textContent = "--:--"; lbl.textContent = ""; return; }
     if (c.limit_s) {
       const left = c.limit_s - elapsed;
+      if (fill) fill.style.width = `${Math.max(0, Math.min(100, 100 * left / c.limit_s))}%`;
       el.textContent = W.mmss(left);
       if (left <= 0) { el.textContent = g.phase === "ended" ? W.mmss(Math.min(elapsed, c.limit_s)) : "0:00"; el.classList.add("over"); lbl.textContent = g.phase === "ended" ? (g.end_reason === "time_expired" ? "TIME'S UP · FINAL" : "FINAL TIME") : "TIME! WAITING FOR HOST"; }
       else { if (left < 60) el.classList.add("warn"); lbl.textContent = g.phase === "ended" ? "TIME LEFT AT END" : "TIME LEFT"; }
@@ -502,8 +506,9 @@
   function wolvesHtml(list, wd, showStatus, maxRows) {
     list = list.sort(scoreSort);
     const ranks = rankLabels(list, scoreKey);
-    const cards = list.map((p, i) => `<div class="wolf ${p.eliminated ? "out" : ""} ${p.online ? "" : "offline"}" style="--tc:${pColor(p)}" data-n="${p.number}" data-key="w-${p.number}"><span class="w-rank">${ranks[i]}</span><span class="w-name">${W.esc(p.display_name)}</span><span class="w-status" data-f="lives">${showStatus ? livesHtml(p) : ""}</span><span class="w-score" data-f="kills">${p.kills}</span></div>`).join("");
-    return `<div class="team-col wolves ${list.length >= 6 ? "dense" : ""}" style="--tc:var(--t2);--rows:${maxRows}" data-key="col2"><div class="team-head"><div class="team-name">${teamName(2)}</div><div class="team-score lone"></div></div><div class="team-sub">EACH FOR THEMSELVES</div><div class="wolf-stack">${cards}</div></div>`;
+    const rows = list.map((p, i) => `<div class="p-row wolf ${p.eliminated ? "out" : ""} ${p.online ? "" : "offline"}" style="--tc:${pColor(p)}" data-n="${p.number}" data-key="w-${p.number}"><span class="p-rank">${ranks[i]}</span><span class="p-name">${W.esc(p.display_name)}</span><span class="p-k" data-f="kills">${p.kills}</span><span class="p-d" data-f="deaths">${p.deaths}</span><span class="p-status" data-f="lives">${livesHtml(p)}</span></div>`).join("");
+    const foot = showStatus && list.length ? `<div class="team-foot">${list.filter(p => p.alive).length}/${list.length} IN</div>` : "";
+    return `<div class="team-col wolves ${maxRows >= 6 ? "dense" : ""}" style="--tc:var(--t2);--rows:${maxRows}" data-key="col2"><div class="team-head"><div class="team-name">${teamName(2)}</div><div class="team-score lone"></div></div><div class="team-sub">EACH FOR THEMSELVES</div><div class="roster"><div class="roster-head"><span></span><span>PLAYER</span><span>${wd.K}</span><span>${wd.D}</span><span>STATUS</span></div>${rows}</div>${foot}</div>`;
   }
 
   // ---- host mode: this board as the admin headset ----------------------------------
@@ -728,7 +733,7 @@
       const label = tiedWith === sides ? "TIED" : (tiedWith > 1 ? `TIED ${ordinal}` : ordinal);
       const rankPill = !lone && topScore > 0 && !squads ? `<div class="team-rank">${label}</div>` : "";
       if (lone) parts.length = 0, parts.push("EACH FOR THEMSELVES");
-      return `<div class="team-col ${maxRows >= 6 ? "dense" : ""} ${lead ? "lead" : ""}" style="--tc:${tc};--rows:${maxRows}" data-key="col${t}">${rankPill}<div class="team-head"><div class="team-name">${tname}</div><div class="team-score${lone ? " lone" : ""}" data-team="${t}">${lone ? "" : (row.score ?? row.kills)}</div></div>${sub}${target}<div class="roster"><div class="roster-head"><span></span><span>PLAYER</span><span>${wd.K}</span><span>${wd.D}</span><span>STATUS</span></div>${rows}</div>${showStatus ? `<div class="team-foot">${row.alive}/${list.length} IN</div>` : ""}</div>`;
+      return `<div class="team-col ${maxRows >= 6 ? "dense" : ""} ${lead ? "lead" : ""}" style="--tc:${tc};--rows:${maxRows}" data-key="col${t}">${rankPill}<div class="team-head"><div class="team-name">${tname}</div><div class="team-score${lone ? " lone" : ""}" data-team="${t}">${lone ? "" : (row.score ?? row.kills)}</div></div>${target}${sub}<div class="roster"><div class="roster-head"><span></span><span>PLAYER</span><span>${wd.K}</span><span>${wd.D}</span><span>STATUS</span></div>${rows}</div>${showStatus ? `<div class="team-foot">${row.alive}/${list.length} IN</div>` : ""}</div>`;
     }).join("");
     if (order.length === 1 && order[0] !== 2) {
       // A team battle always has at least two teams: hold the second slot open instead of

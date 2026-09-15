@@ -302,16 +302,6 @@ body{font-size:2.4vmin;line-height:1.2}
 .team-score.lone{visibility:hidden}
 
 /* ---------- lone wolves: one card per free-for-all player, stacked in the free-for-all column ---------- */
-.team-col.wolves .wolf-stack{display:flex;flex-direction:column;gap:1vmin;padding:0 3cqw 1.4vmin;min-height:0;flex:1}
-.wolf{display:grid;grid-template-columns:5cqw minmax(0,1fr) 22cqw 16cqw;align-items:center;gap:1.5cqw;padding:.8vmin 3cqw;border-radius:1.2vmin;background:rgba(255,255,255,.05);box-shadow:inset 0 .6vmin 0 0 var(--tc);min-height:0;flex:0 1 calc(var(--rowh,9vmin) * 1.7);overflow:hidden}
-.wolf.out{opacity:.45}
-.wolf .w-rank{font-family:var(--display);font-size:clamp(1.5vmin,5cqw,2.8vmin);color:var(--ink3);text-align:center;position:relative;top:var(--nudge-display)}
-.wolf .w-name{font-family:var(--display);font-size:min(clamp(2.6vmin,10cqw,4.6vmin),calc(var(--rowh,9vmin) * .8));color:var(--tc);white-space:nowrap;overflow:hidden;min-width:0;line-height:1.25;position:relative;top:var(--nudge-display)}
-.wolf .w-status{text-align:center;font-size:clamp(1.3vmin,4cqw,2vmin);font-weight:800;letter-spacing:.08em;text-transform:uppercase}
-.wolf .w-status .lives{letter-spacing:0;font-size:clamp(1.1vmin,3.6cqw,1.8vmin);color:var(--bad);white-space:nowrap}
-.wolf .w-status .lives .off{color:var(--ink3)}
-.wolf .w-status .out{color:var(--ink3)} .wolf .w-status .alive{color:var(--ink2)}
-.wolf .w-score{font-family:var(--display);font-size:min(clamp(3.2vmin,13cqw,6vmin),calc(var(--rowh,9vmin) * .95));text-align:right;color:var(--tc);position:relative;top:var(--nudge-display)}
 .teams.hearts .wolf{grid-template-columns:5cqw minmax(0,1fr) 26cqw 16cqw}
 
 .hostbtn>span{display:inline-block;position:relative;top:var(--nudge-display)}   /* the condensed face sits high: use the measured nudge */
@@ -345,10 +335,12 @@ body{font-size:2.4vmin;line-height:1.2}
 .collapsed .segb,.collapsed .stepper,.collapsed .arrow{cursor:default;pointer-events:none}
 .collapsed .segb:not(.on),.collapsed .stepper:not(.on),.collapsed .stepper .arrow{max-width:0;padding:0;opacity:0;overflow:hidden}
 .collapsed .seg[data-k="target"]:has(.segb.on){max-width:0;opacity:0;margin-left:-1vmin;border-width:0}   /* "no target" says nothing mid-game */
-/* a team game where everyone so far picked free-for-all: the wolves' cards fill the board, two abreast */
-.teams.wolves-only .team-col.wolves .wolf-stack{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;gap:1vmin 1.4vmin}
-.teams.wolves-only .wolf{grid-template-columns:2.6cqw minmax(0,1fr) 12cqw 7cqw;padding:.9vmin 1.6cqw}
-.teams.wolves-only .wolf .w-name{font-size:min(clamp(2.6vmin,5cqw,4.6vmin),calc(var(--rowh,9vmin) * .8))}
-.teams.wolves-only .wolf .w-rank{font-size:clamp(1.5vmin,2.4cqw,2.8vmin)}
-.teams.wolves-only .wolf .w-score{font-size:min(clamp(3.2vmin,6cqw,6vmin),calc(var(--rowh,9vmin) * .95))}
-.teams.wolves-only .wolf .w-status{font-size:clamp(1.3vmin,2cqw,2vmin)} .teams.wolves-only .wolf .w-status .lives{font-size:clamp(1.1vmin,1.8cqw,1.8vmin)}
+/* lone wolves are roster rows like anyone else, with their own colour as an accent; the name stays white */
+.p-row.wolf{box-shadow:inset .6vmin 0 0 0 var(--tc)}
+.p-row.wolf .p-rank{color:var(--tc)}
+/* the kill-target bar keeps the column's own side padding */
+.team-col .target{padding:0 4cqw .5vmin}
+/* a timer's remaining share, under the clock */
+.clock-bar{display:none;width:28vmin;height:.7vmin;border-radius:.35vmin;background:rgba(255,255,255,.14);overflow:hidden;margin-top:.4vmin}
+.clock-bar.on{display:block}
+.clock-fill{height:100%;width:100%;background:var(--ink);border-radius:.35vmin;transition:width .9s linear}
