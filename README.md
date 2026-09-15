@@ -17,6 +17,15 @@ Guns + headsets  ──ESP-NOW LR──▶  ESP32 sniffer dongle  ──USB seri
 (players 1-16, host ...:ff)        firmware/swaptx_sniffer          python -m swaptx           http://laptop:8000
 ```
 
+## Screenshots
+
+Hosting from the board (simulated players): the lobby with the house-rule toggles, and a
+Team Battle under way with a board timer, first-to-10 and a lone wolf.
+
+![Hosted lobby](docs/screenshots/hosting-lobby.png)
+
+![Team Battle in progress](docs/screenshots/hosting-live.png)
+
 ## Hardware
 
 * **Lonely Binary ESP32 WROOM-32UE IPEX antenna kit** (or any classic ESP32-WROOM-32U board

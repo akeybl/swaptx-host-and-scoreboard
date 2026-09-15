@@ -492,7 +492,7 @@
 
   function lobbyHtml() {
     const ps = (snap.players || []).filter(p => p.in_game);
-    const tiles = ps.map(p => `<div class="tile" style="--tc:${pColor(p)}" data-key="l-${p.number}">${W.esc(p.display_name)}${isSolo() && !p.late_join ? "" : `<small>${isSolo() ? "" : (p.team_name ? p.team_name + " team" + (p.team_source === "carried" ? " (last game)" : "") : "team ?")}${p.late_join ? (isSolo() ? "late" : " · late") : ""}</small>`}</div>`).join("");
+    const tiles = ps.map(p => `<div class="tile" style="--tc:${pColor(p)}" data-key="l-${p.number}">${W.esc(p.display_name)}${isSolo() && !p.late_join ? "" : `<small>${isSolo() ? "" : (p.team_name ? p.team_name + (p.effective_team === 2 ? "" : " team") + (p.team_source === "carried" ? " (last game)" : "") : "team ?")}${p.late_join ? (isSolo() ? "late" : " · late") : ""}</small>`}</div>`).join("");
     const s = snap.game.settings || {};
     return `<div class="center"><div class="title">GET READY</div><div class="sub">${W.esc(s.mode_label || "GAME")} · <b>${ps.length}</b> PLAYERS ONLINE</div>${snap.host && snap.host.enabled && snap.host.awaiting_rejoin ? `<div class="sub warn">MODE CHANGED · SWITCH GUNS OFF AND ON IN ${W.esc((s.mode_label || "THE NEW MODE").toUpperCase())}</div>` : ""}<div class="tiles">${tiles || '<div class="sub">turn on headsets, then guns</div>'}</div></div>`;
   }
