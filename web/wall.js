@@ -290,8 +290,8 @@
     document.querySelectorAll("#board .teams, #board .royale, #board .stats").forEach(box => {
       const adjust = (key, sel) => {
         const el = box.querySelector(sel);
-        if (!el) return;
-        box.style.removeProperty(`--nudge-${key}`);
+        box.style.removeProperty(`--nudge-${key}`);     // fall back to the page-wide value until measured
+        if (!el || !el.getClientRects().length) return;  // hidden (the phone's rosters): nothing to measure
         const r = residualEm(el);
         if (r == null || !isFinite(r)) return;
         const base = parseFloat(rootCs.getPropertyValue(`--nudge-${key}`)) || 0;
