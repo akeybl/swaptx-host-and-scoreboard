@@ -360,8 +360,21 @@ html.phone .clock-label{font-size:3vw;margin-top:-1.2vw}
 html.phone .clock-bar{width:60vw;height:1.3vw;border-radius:.65vw;margin-top:1.6vw}
 html.phone .phase-badge{font-size:5.6vw;line-height:1;margin-top:1vw}
 html.phone .alive{font-size:3.6vw}
-html.phone .hostctl,html.phone .feed,html.phone #hint,html.phone .lastgame{display:none}
-html.phone .body{display:flex;flex-direction:column;overflow:auto;padding-bottom:16vw}
+html.phone .feed,html.phone #hint,html.phone .lastgame{display:none}
+/* hosting from a phone: the same buttons and toggles, thumb-sized */
+html.phone .hostctl{display:flex;justify-content:center;flex-wrap:wrap;gap:2.4vw;margin-top:2vw}
+html.phone .hostbtn{font-size:4.6vw;padding:1.4vw 5vw;border-radius:2.4vw;border-width:.5vw;line-height:1.1}
+html.phone .hc-wrap{justify-content:center;gap:1.6vw 2vw}
+html.phone .hc-pair{flex-wrap:wrap;justify-content:center;gap:1.6vw 2vw}
+html.phone .seg{height:7.6vw;font-size:3vw;border-radius:2vw;border-width:.3vw;gap:.3vw;letter-spacing:.04em}
+html.phone .segb{padding:0 2.4vw}
+html.phone .stepper{padding:0 .6vw}
+html.phone .stepper .val,html.phone .stepper i{font-size:3vw}
+html.phone .stepper .val{min-width:2.4ch}
+html.phone .stepper .arrow{padding:0 1.6vw}
+html.phone .stepper .arrow svg{width:2.4vw;height:3.8vw}
+html.phone .center .sub.warn{margin-top:1vw}
+html.phone .body{display:flex;flex-direction:column;overflow:auto}
 html.phone .board{flex:1;display:flex;flex-direction:column;padding:3vw;overflow:visible}
 html.phone .board>*{margin:auto 0}                     /* centred when there is room, never clipped when there is not */
 html.phone .teams{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-flow:row;gap:2.6vw;flex:none}
@@ -395,4 +408,7 @@ html.phone .final,html.phone .final.team-final{display:grid;grid-template-column
 html.phone .f-team-head{font-size:5vw}
 #adminLink{display:none;color:var(--ink2);text-decoration:none;border:.4vw solid var(--line);border-radius:2vw;padding:.6vw 2.4vw;margin-left:2vw;letter-spacing:.06em;text-transform:uppercase}
 html.phone #adminLink{display:inline-block}
-html.phone #dongleText{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52vw}
+html.phone #dongleText{white-space:normal;flex:1;min-width:0;text-align:left;line-height:1.3}
+html.phone .statusbar{justify-content:flex-start;align-items:center;gap:2.4vw}
+html.phone #adminLink{white-space:nowrap;flex:none;font-size:3vw;padding:.8vw 2.4vw;margin-left:auto}
+html.phone .body{padding-bottom:20vw}

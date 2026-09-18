@@ -89,7 +89,7 @@
     // Hosting: the settings are toggles, and the mode toggle stands in for the big badge. When the
     // game starts the same controls collapse down to their chosen values (the elements stay, only
     // a class changes, so the collapse animates). When a gun hosts, the header is the plain chip list.
-    const toggles = !!host.enabled && !isPhone();       // a phone shows the settings in force, never the controls
+    const toggles = !!host.enabled;                     // a phone gets the same toggles, sized for a thumb
     // the mode toggle stands in for the big badge; when Royale is hidden there is no mode toggle, so the badge stays
     const modeToggle = toggles && !(snap.config && snap.config.hide_royale);
     $("modeBadge").style.display = modeToggle ? "none" : "";
