@@ -44,12 +44,12 @@
     const by = new Map((snap.players || []).map(p => [p.number, p]));
     const tb = $("playersTable").querySelector("tbody");
     if (!tb.dataset.built) {
-      tb.innerHTML = Array.from({ length: 16 }, (_, i) => i + 1).map(n => `<tr data-n="${n}"><td><b>${n}</b><br><small class="u mono">…:${n.toString(16).padStart(2, "0")}</small></td><td><input class="pname" placeholder="Player ${n}"></td><td><select class="pteam"><option value="">auto</option>${TEAMS.map((t, i) => `<option value="${i}">${t}</option>`).join("")}</select></td><td class="pradio"></td><td class="pstats"></td><td><button class="b sm psave">Save</button></td></tr>`).join("");
+      tb.innerHTML = Array.from({ length: 16 }, (_, i) => i + 1).map(n => `<tr data-n="${n}"><td><b>${n}</b><br><small class="u mono">…:${n.toString(16).padStart(2, "0")}</small></td><td><input class="pname" placeholder="Player ${n}"></td><td class="pradio"></td><td class="pstats"></td><td><button class="b sm psave">Save</button></td></tr>`).join("");
       tb.dataset.built = "1";
       tb.querySelectorAll("tr").forEach(tr => {
         const n = +tr.dataset.n;
         tr.querySelector(".psave").addEventListener("click", async () => {
-          const body = { name: tr.querySelector(".pname").value, team_override: tr.querySelector(".pteam").value === "" ? null : +tr.querySelector(".pteam").value };
+          const body = { name: tr.querySelector(".pname").value, team_override: null };   // teams always come from the radio
           try { await W.api(`/api/players/${n}`, { method: "PUT", body: JSON.stringify(body) }); $("playersMsg").textContent = `Saved player ${n}`; } catch (e) { $("playersMsg").textContent = "Error: " + e.message; }
         });
         tr.querySelector(".pname").addEventListener("keydown", e => { if (e.key === "Enter") tr.querySelector(".psave").click(); });
@@ -58,7 +58,6 @@
     tb.querySelectorAll("tr").forEach(tr => {
       const n = +tr.dataset.n, p = by.get(n) || {};
       const nameEl = tr.querySelector(".pname"); if (document.activeElement !== nameEl) nameEl.value = p.name || snap.names[String(n)] || "";
-      const tsel = tr.querySelector(".pteam"); if (document.activeElement !== tsel) tsel.value = p.team_override != null ? String(p.team_override) : (snap.team_overrides[String(n)] != null ? String(snap.team_overrides[String(n)]) : "");
       const team = p.effective_team;
       tr.querySelector(".pradio").innerHTML = p.last_seen ? `<span class="pill ${p.online ? "ok" : ""}">${p.online ? "online" : "quiet"}</span> ${p.rssi != null ? p.rssi + " dBm" : ""}<br><small class="u">${team != null ? `<span class="t${team}">${teamLabel(team)}</span> (${p.team_source})` : "team ?"} · seen ${W.clock(p.last_seen)}</small>` : `<span class="pill">never heard</span>`;
       tr.querySelector(".pstats").innerHTML = p.in_game ? `${p.kills} kills / ${p.deaths} deaths · streak ${p.best_streak}${p.lives_left != null ? " · lives " + p.lives_left : ""}${p.eliminated ? ' · <span class="pill bad">OUT</span>' : ""}${p.gun_restarts ? ` · <span class="pill warn">${p.gun_restarts} restart</span>` : ""}<br><small class="u">reported score ${p.score_reported ?? "-"}</small>` : `<small class="u">not in game</small>`;

@@ -22,7 +22,7 @@ main{padding:14px;max-width:1100px;margin:0 auto}
   .row input,.row select{width:100%;box-sizing:border-box}
   nav{overflow-x:auto;white-space:nowrap}
   table{display:block;overflow-x:auto;width:100%}
-  #playersTable th:nth-child(4),#playersTable td:nth-child(4),#playersTable th:nth-child(5),#playersTable td:nth-child(5){display:none}
+  #playersTable th:nth-child(3),#playersTable td:nth-child(3),#playersTable th:nth-child(4),#playersTable td:nth-child(4){display:none}
   #playersTable input{min-width:9em}
 }
 section{display:none}section.on{display:block}
@@ -64,8 +64,8 @@ small.u{color:var(--ink3)}
     <div class="msg" id="teamsMsg"></div>
   </div>
   <div class="card"><h2>Gun number → player name</h2>
-    <p class="help">Each gun has a persistent player number (set with the reload button, spoken aloud at power-on). Names show on the wall. Team is learned from the radio; set an override only if the wall never shows the right color.</p>
-    <table id="playersTable"><thead><tr><th>#</th><th>Name</th><th>Team</th><th>Radio</th><th>Stats</th><th></th></tr></thead><tbody></tbody></table>
+    <p class="help">Each gun has a persistent player number (set with the reload button, spoken aloud at power-on). Names show on the wall. Teams come from the radio, the colour each gun picked.</p>
+    <table id="playersTable"><thead><tr><th>#</th><th>Name</th><th>Radio</th><th>Stats</th><th></th></tr></thead><tbody></tbody></table>
     <div class="msg" id="playersMsg"></div>
   </div>
 </section>
