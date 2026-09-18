@@ -376,7 +376,7 @@ html.phone .stepper .arrow svg{width:2.4vw;height:3.8vw}
 html.phone .center .sub.warn{margin-top:1vw}
 html.phone .body{display:flex;flex-direction:column;overflow:auto}
 html.phone .board{flex:1;display:flex;flex-direction:column;padding:3vw;overflow:visible}
-html.phone .board>*{margin:auto 0}                     /* centred when there is room, never clipped when there is not */
+html.phone .board>.center{margin:auto 0}               /* the lobby text sits centred; score tiles stay at the top */
 html.phone .teams{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-flow:row;gap:2.6vw;flex:none}
 html.phone .team-col{border-radius:3vw;border-width:.5vw;--rowh:9vw}
 html.phone .team-col.lead{box-shadow:none}
