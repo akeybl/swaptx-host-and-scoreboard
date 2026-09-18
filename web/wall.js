@@ -4,6 +4,16 @@
   const W = window.SWX;
   let snap = null, protocol = null, clockBase = null, lastSeenEventId = 0;
   let timelineMode = false, sound = localStorage.getItem("swx_sound") === "1";
+  // Rear projection: mirror the whole wall so it reads right from the other side of the screen.
+  // Remembered by this browser; ?mirror=1 / ?mirror=0 in the address sets it for the projector machine.
+  const mirrorParam = new URLSearchParams(location.search).get("mirror");
+  let mirror = false;
+  try {
+    if (mirrorParam != null) localStorage.setItem("swx_mirror", mirrorParam === "0" || mirrorParam === "off" ? "0" : "1");
+    mirror = localStorage.getItem("swx_mirror") === "1";
+  } catch (e) { mirror = mirrorParam != null && mirrorParam !== "0" && mirrorParam !== "off"; }
+  const applyMirror = () => document.documentElement.classList.toggle("mirror", mirror);
+  applyMirror();
   let view = new URLSearchParams(location.search).get("view") || "board";   // board | stats
   const players = () => new Map((snap?.players || []).map(p => [p.number, p]));
 
@@ -1006,6 +1016,7 @@
     else if (k === "t") { timelineMode = !timelineMode; $("timelineFull").classList.toggle("hidden", !timelineMode); render(); }
     else if (k === "s") { sound = !sound; localStorage.setItem("swx_sound", sound ? "1" : "0"); if (sound) beep(SFX.join); }
     else if (k === "a") { window.open("/admin", "_blank"); }
+    else if (k === "m") { mirror = !mirror; try { localStorage.setItem("swx_mirror", mirror ? "1" : "0"); } catch (e) {} applyMirror(); }
     else if (k === "arrowdown" || k === "arrowup") { const ol = $("feed"); ol.scrollBy({ top: (k === "arrowdown" ? 1 : -1) * ol.clientHeight * 0.6, behavior: "smooth" }); }
     else if (k === "home") { $("feed").scrollTo({ top: 0, behavior: "smooth" }); }
     else if (k === "1" || k === "2") { view = k === "2" ? "stats" : "board"; timelineMode = false; $("timelineFull").classList.add("hidden"); render(); }

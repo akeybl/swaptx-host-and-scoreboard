@@ -344,3 +344,5 @@ body{font-size:2.4vmin;line-height:1.2}
 .clock-bar{display:none;width:28vmin;height:.7vmin;border-radius:.35vmin;background:rgba(255,255,255,.14);overflow:hidden;margin-top:.4vmin}
 .clock-bar.on{display:block}
 .clock-fill{height:100%;width:100%;background:var(--ink);border-radius:.35vmin;transition:width .9s linear}
+/* rear projection: the whole wall flipped left-to-right (M on the wall, or ?mirror=1) */
+html.mirror{transform:scaleX(-1)}

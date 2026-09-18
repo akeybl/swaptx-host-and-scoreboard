@@ -53,7 +53,9 @@ restarts a board that is up but not answering. The board keeps its state in `dat
 logs to `data/server-8000.log`.
 
 Open **http://&lt;laptop-ip&gt;:8000/** on the machine driving the projector (press `F` for
-fullscreen) and **http://&lt;laptop-ip&gt;:8000/admin** on a phone to set names.
+fullscreen) and **http://&lt;laptop-ip&gt;:8000/admin** on a phone to set names. Projecting from
+behind the screen? Press `M`, or open `/?mirror=1` once: the whole wall flips left-to-right and
+that browser remembers it.
 
 Tests: `./.venv/bin/python -m pytest -q`
 
