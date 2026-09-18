@@ -142,6 +142,10 @@ class Hub:
             evs = self.state.apply_dongle(parsed)
             if parsed.kind in ("boot", "legacy_boot"):
                 self.store.log_dongle("boot", json.dumps(parsed.data)[:500], ts)
+            try:
+                self.host.on_dongle_message(parsed)
+            except Exception:
+                log.exception("host controller failed on dongle message %s", parsed.kind)
             self._queue(evs)
             return evs
         return self.ingest_frame(parsed)

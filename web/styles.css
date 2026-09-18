@@ -393,3 +393,6 @@ html.phone .go-sub{font-size:3.4vw}
 html.phone .awards,html.phone .final .f-row,html.phone .final .f-head{display:none}
 html.phone .final,html.phone .final.team-final{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:auto;gap:3vw;width:100%}
 html.phone .f-team-head{font-size:5vw}
+#adminLink{display:none;color:var(--ink2);text-decoration:none;border:.4vw solid var(--line);border-radius:2vw;padding:.6vw 2.4vw;margin-left:2vw;letter-spacing:.06em;text-transform:uppercase}
+html.phone #adminLink{display:inline-block}
+html.phone #dongleText{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52vw}

@@ -69,6 +69,8 @@ class HostController:
         self.end_due: Optional[float] = None
         self.pending: list[tuple[float, str, str]] = []     # (due, dst, payload)
         self.awaiting_rejoin = False                        # a mode change: guns must be switched on again
+        self._resync_wanted = False                         # the dongle came back: host mode must be re-taken
+        self._last_resync = 0.0
         self.tx_count = 0
         self.last_tx: Optional[dict] = None
         self.last_error: Optional[str] = None
@@ -155,13 +157,59 @@ class HostController:
         return ok
 
     def on_dongle_connected(self) -> None:
-        """The dongle (re)appeared: put it back into host mode if we are hosting."""
-        if self.enabled or self._resume:
-            self._command(f"rate,{self.rate}")
-            self._command("host,1")
-            if self._resume and not self.enabled:
-                self.enabled = True          # a backend restart mid-session keeps hosting quietly
-            self._resume = False
+        """The dongle (re)appeared. Opening the port resets it, and anything written while it boots
+        is lost, so the host-mode commands wait for its boot banner (with a timer as a backstop)."""
+        if self._resume and not self.enabled:
+            self.enabled = True              # a backend restart mid-session keeps hosting quietly
+        self._resume = False
+        if self.enabled:
+            self._resync_wanted = True
+            self._later(3.0, self._resync_dongle)
+
+    def on_dongle_message(self, msg) -> None:
+        """Status lines from the firmware: the boot banner is the cue to (re)take host mode, and a
+        status that says the dongle is not the host while we are means the command was lost."""
+        if not self.enabled:
+            return
+        kind, data = getattr(msg, "kind", ""), getattr(msg, "data", {}) or {}
+        if kind in ("boot", "legacy_boot"):
+            self._resync_wanted = True
+            self._later(0.8, self._resync_dongle)
+        elif kind == "status" and data.get("host") is False:
+            self._resync_dongle(force=True)
+        elif kind == "error" and "host,1" in str(data.get("msg", "")):
+            self._resync_dongle(force=True)
+        elif kind == "host" and data.get("host") is True:
+            self._resync_wanted = False
+
+    def _later(self, delay: float, fn) -> None:
+        loop = getattr(self.hub, "loop", None)
+        if loop is None:
+            fn()
+            return
+        try:
+            loop.call_later(delay, fn)
+        except Exception:
+            fn()
+
+    def _resync_dongle(self, force: bool = False) -> None:
+        """Put the dongle in host mode and tell the guns where we stand: host-up and the current
+        lobby (a game in progress is left alone). Throttled, since several cues can fire together."""
+        now = time.time()
+        if not self.enabled:
+            return
+        if not force and not self._resync_wanted:
+            return
+        if now - self._last_resync < 5.0:
+            return
+        self._last_resync = now
+        self._resync_wanted = False
+        self._command(f"rate,{self.rate}")
+        self._command("host,1")
+        if self.hub.state.game.phase != "live":
+            self._send(BROADCAST, "36,90,1,1,42", 0.3, now)
+            self._send(BROADCAST, "36,90,1,1,42", 0.3 + BEACON_GAP_S, now)
+            self._announce_lobby(now, delay=1.3)
 
     # ------------------------------------------------------------------ actions
     def enable(self, on: bool) -> dict[str, Any]:

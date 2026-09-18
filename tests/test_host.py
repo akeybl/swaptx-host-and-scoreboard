@@ -1,7 +1,7 @@
 """Host mode: the dongle as the admin headset. Every message it sends was seen from the stock host."""
 import time
 
-from swaptx.frames import parse_line, Frame, HOST_MAC, BROADCAST
+from swaptx.frames import parse_line, Frame, HOST_MAC, BROADCAST, DongleMessage
 from swaptx.host import HostController
 from swaptx.protocol import Protocol
 from swaptx.state import GameState
@@ -363,3 +363,31 @@ def test_hiding_five_lives_keeps_this_boards_team_battles_unlimited():
     hub.state.config["hide_royale"] = False
     host.set_settings(mode=1, lives=0)                       # in Royale the same bit is 200 HP: still offered
     assert host.settings["lives"] == 0
+
+
+def test_a_returning_dongle_is_put_back_into_host_mode_after_its_boot_banner():
+    hub, host = make()
+    hub.t = time.time()
+    host.enable(True)
+    host.tick(time.time() + 2)
+    hub.hear(mac(1), H, "36,79,0,1,0,3,1,42")
+    hub.reader.lines.clear()
+    host.on_dongle_connected()                               # FakeHub has no loop: the backstop runs at once
+    host.on_dongle_message(DongleMessage(ts=time.time(), kind="boot", data={"fw": "swaptx-sniffer 1.2"}))
+    host.tick(time.time() + 3)
+    lines = hub.reader.lines
+    assert lines[:2] == ["rate,0", "host,1"]
+    assert lines.count("rate,0") == 1                         # the boot cue inside the throttle window sent nothing twice
+    tx = hub.tx()
+    assert tx.count("tx,bcast,36,90,1,1,42") == 2 and tx[-1] == "tx,bcast,36,65,1,0,0,3,0,0,1,1,42"
+    # later the firmware admits it is not the host: taken again, no lobby spam inside the window
+    host._last_resync = 0
+    hub.reader.lines.clear()
+    host.on_dongle_message(DongleMessage(ts=time.time(), kind="status", data={"host": False}))
+    assert hub.reader.lines[:2] == ["rate,0", "host,1"]
+    # a dongle that answers "host: true" clears the wish, and a disabled host never reacts
+    host.on_dongle_message(DongleMessage(ts=time.time(), kind="host", data={"host": True}))
+    host.enable(False)
+    hub.reader.lines.clear()
+    host.on_dongle_message(DongleMessage(ts=time.time(), kind="boot", data={}))
+    assert hub.reader.lines == []
