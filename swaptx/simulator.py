@@ -204,15 +204,21 @@ class Simulator(threading.Thread):
                 self._frame(HOST_MAC, mac(p), ack_game)
         # game over
         if host_mode == 0 or squads:
-            tk: dict[int, int] = {}
+            # sides: one per real colour, and every lone wolf on their own (the yellow pick is not
+            # a team, so the host never names it): last side standing, else the side with the most
+            # kills, else a draw
+            side = lambda p: ("t", teams[p]) if teams[p] != 2 else ("p", p)
+            sk: dict = {}
             for p, k in kills.items():
-                tk[teams[p]] = tk.get(teams[p], 0) + k
-            if host_mode == 0 and lives == 0 and len(teams_alive()) == 1:
-                winner = next(iter(teams_alive()))
-            elif squads and len(teams_alive()) == 1:
-                winner = next(iter(teams_alive()))
+                sk[side(p)] = sk.get(side(p), 0) + k
+            standing = {side(p) for p in alive}
+            if ((host_mode == 0 and lives == 0) or squads) and len(standing) == 1:
+                best = next(iter(standing))
             else:
-                winner = max(tk, key=tk.get)
+                top = max(sk.values()) if sk else 0
+                leaders = [s for s, k in sk.items() if k == top]
+                best = leaders[0] if len(leaders) == 1 and top > 0 else None
+            winner = 9 if best is None else (best[1] if best[0] == "t" else 10 + (best[1] - 1))
         else:
             wp = next(iter(alive)) if len(alive) == 1 else max(kills, key=kills.get)
             winner = 10 + (wp - 1) if teams[wp] == 2 else teams[wp]

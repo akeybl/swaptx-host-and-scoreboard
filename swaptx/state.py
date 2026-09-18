@@ -185,6 +185,8 @@ class Game:
     winner_player: Optional[int] = None
     winner_team: Optional[int] = None
     draw: bool = False                        # the host said nobody won (36,69 winner 9)
+    tied_teams: list = field(default_factory=list)     # who a draw is between: real teams sharing first place ...
+    tied_players: list = field(default_factory=list)   # ... or players sharing the top kills (lone wolves)
     host_mac: Optional[str] = None
     host_seen_at: Optional[float] = None
     last_traffic_at: Optional[float] = None
@@ -914,6 +916,19 @@ class GameState:
             wp = f.get("win_player")
             wt = f.get("win_team")
             wt = wt if isinstance(wt, int) and 0 <= wt <= 3 else None
+        draw, tied_players = f.get("winner") == WINNER_DRAW, []
+        if wt == FFA_TEAM:
+            # the yellow pick is not a team, so a host naming it means the best of the lone wolves
+            # took it; wolves sharing the top are a tie between those players
+            wt = None
+            wolves = [p for p in self.players.values() if p.in_game and p.effective_team == FFA_TEAM]
+            if wolves:
+                top = max(p.kills for p in wolves)
+                leaders = [p for p in wolves if p.kills == top]
+                if len(leaders) == 1:
+                    wp = leaders[0].number
+                else:
+                    draw, tied_players = True, [p.number for p in leaders]
         if wt is not None:
             confirmed = [p for p in self.players.values() if p.in_game and p.team == wt]
             if not confirmed:
@@ -921,7 +936,7 @@ class GameState:
                 if len(unheard) == 1:              # the admin's own gun never reports in: the win names its colour
                     unheard[0].team_inferred, unheard[0].team_carried = wt, None
         return self._end_game(ts, "game_over", frame, winner_player=wp, winner_team=wt,
-                              draw=f.get("winner") == WINNER_DRAW)
+                              draw=draw, tied_players=tied_players)
 
     def _on_roster(self, ev: Event, frame: Frame) -> list[dict]:
         n = ev.fields.get("player") or ev.src_player
@@ -1087,15 +1102,19 @@ class GameState:
         return out
 
     def _end_game(self, ts: float, reason: str, frame: Frame | None, winner_player: int | None = None,
-                  winner_team: int | None = None, draw: bool = False) -> list[dict]:
+                  winner_team: int | None = None, draw: bool = False,
+                  tied_players: list[int] | None = None) -> list[dict]:
         g = self.game
         g.played_kind = self.game_kind()
         g.phase = "ended"
         g.ended_at = ts
         g.end_reason = reason
         g.draw = draw
+        g.tied_teams, g.tied_players = [], list(tied_players or [])
         if draw:
             winner_team = winner_player = None
+            if not g.tied_players:
+                g.tied_teams, g.tied_players = self._tied_parties()
         for p in self.players.values():
             if p.in_game and p.alive and p.alive_since is not None:
                 p.time_alive += max(0.0, ts - p.alive_since)
@@ -1110,7 +1129,7 @@ class GameState:
         g.winner_player, g.winner_team = winner_player, winner_team
         g.summary = self.game_summary(ts)
         if draw:
-            title = "DRAW"
+            title = self._tie_title() or "DRAW"
         elif winner_player is not None and (winner_team is None or self.game_kind() != "team"):
             title = f"{self.pname(winner_player).upper()} WINS"
         elif winner_team is not None:
@@ -1157,16 +1176,28 @@ class GameState:
             else:
                 best = max(players, key=lambda p: ((p.out_at or p.last_death_at or 0), -p.number))
             return None, best.number
-        teams = [t for t in self._team_table(ts=g.ended_at or time.time()) if t["team"] != FFA_TEAM]
-        if teams:
-            # already in standing order: last side standing, then kills
-            if len(teams) == 1 or teams[0]["rank"] != teams[1]["rank"]:
-                return teams[0]["team"], None
-            return None, None            # tie: no winner
-        best = max(players, key=lambda p: (p.kills, -p.deaths))
-        if best.kills == 0:
+        # Team Battle: sides are the real colours and every lone wolf on their own. Standing beats
+        # score (a side with nobody left has lost), then kills; a shared top is a tie, and nobody
+        # wins a game in which nobody scored and nobody fell.
+        ranked = self._ranked_sides(players)
+        if not ranked:
             return None, None
-        return None, best.number
+        top = self._side_key(ranked[0])
+        if len(ranked) > 1 and self._side_key(ranked[1]) == top:
+            return None, None
+        if top[0] == 0 and top[2] == 0:
+            return None, None
+        team, ps = ranked[0]
+        return (team, None) if team is not None else (None, ps[0].number)
+
+    def _side_key(self, side) -> tuple:
+        team, ps = side
+        out = bool(ps) and all(p.eliminated for p in ps)
+        out_at = max((p.out_at or 0.0) for p in ps) if out else 0.0
+        return (1 if out else 0, -out_at, -sum(p.kills for p in ps), sum(p.deaths for p in ps))
+
+    def _ranked_sides(self, players) -> list:
+        return sorted(self._sides(players), key=lambda s: self._side_key(s) + ((s[0] if s[0] is not None else 99), s[1][0].number))
 
     def _archive_game(self, carry: bool | None = None) -> None:
         if carry is None:
@@ -1241,11 +1272,34 @@ class GameState:
                 "storm_siren_s": float(self.config["storm_siren_s"]) if storm else None,
                 "stale": bool(g.phase == "live" and g.last_traffic_at and now - g.last_traffic_at > float(self.config["stale_game_s"]))}
 
+    def _tied_parties(self) -> tuple[list[int], list[int]]:
+        """Who a draw is between: the sides sharing first place, teams and lone wolves alike."""
+        players = [p for p in self.players.values() if p.in_game]
+        ranked = self._ranked_sides(players)
+        if len(ranked) < 2:
+            return [], []
+        top = self._side_key(ranked[0])
+        if self._side_key(ranked[1]) != top or (top[0] == 0 and top[2] == 0):
+            return [], []
+        tied = [s for s in ranked if self._side_key(s) == top]
+        return [s[0] for s in tied if s[0] is not None], [s[1][0].number for s in tied if s[0] is None]
+
+    def _tie_title(self) -> Optional[str]:
+        """'RED & BLUE TIE', 'ZOE & LEO TIE', '4-WAY TIE'; None when the draw is between nobody in particular."""
+        g = self.game
+        names = [self.tname(t) for t in g.tied_teams] + [self.pname(p) for p in g.tied_players]
+        if not names:
+            return None
+        if len(names) > 3:
+            return f"{len(names)}-WAY TIE"
+        return " & ".join(n.upper() for n in names) + " TIE"
+
     def _winner_label(self) -> Optional[str]:
         """Who won, as a name: the player when a colour with one player on it won a royale, else the team."""
         g = self.game
         if g.draw:
-            return "Draw"
+            names = [self.tname(t) for t in g.tied_teams] + [self.pname(p) for p in g.tied_players]
+            return ("Tie: " + " & ".join(names)) if names else "Draw"
         if g.winner_player and (g.winner_team is None or self.game_kind() != "team"):
             return self.pname(g.winner_player)
         if g.winner_team is not None:
@@ -1293,6 +1347,7 @@ class GameState:
             "kind": self.game_kind(), "kind_label": GAME_KINDS[self.game_kind()], "squads": self.squads(),
             "settings": g.settings, "started_at": g.started_at, "ended_at": g.ended_at, "end_reason": g.end_reason,
             "duration_s": round(dur, 1), "winner_player": g.winner_player, "winner_team": g.winner_team, "draw": g.draw,
+            "tie_title": self._tie_title(), "tied_teams": list(g.tied_teams), "tied_players": list(g.tied_players),
             "winner_label": self._winner_label(),
             "total_kills": g.total_kills,
             "kills_per_min": round(g.total_kills / (dur / 60), 2) if dur > 0 else 0,
@@ -1318,6 +1373,7 @@ class GameState:
                 "settings": g.settings, "lobby_at": g.lobby_at, "started_at": g.started_at,
                 "ended_at": g.ended_at, "end_reason": g.end_reason, "start_source": g.start_source,
                 "winner_player": g.winner_player, "winner_team": g.winner_team, "draw": g.draw,
+            "tie_title": self._tie_title(), "tied_teams": list(g.tied_teams), "tied_players": list(g.tied_players),
                 "winner_label": self._winner_label(),
                 "host_seen_at": g.host_seen_at, "last_traffic_at": g.last_traffic_at,
                 "total_kills": g.total_kills, "first_blood_player": g.first_blood_player,

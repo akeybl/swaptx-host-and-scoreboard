@@ -118,3 +118,51 @@ def test_the_timer_running_out_at_nil_nil_is_a_draw():
     over = [e for e in evs if e["kind"] == "game_over"][0]
     assert over["title"] == "DRAW" and st._winner_label() == "Draw"
     assert g.summary["draw"] is True and st.game_summary(T0 + 700)["draw"] is True
+
+
+def test_a_host_naming_the_yellow_pick_means_the_best_wolf_or_a_tie_between_wolves():
+    st = game({1: "Alex", 2: "Sam", 4: "Maya"})
+    hear(st, 0, H, B, "36,90,1,1,42")
+    hear(st, 1, H, B, "36,65,1,0,0,3,0,0,1,1,42")
+    hear(st, 2, mac(1), H, "36,79,0,1,0,3,1,42")              # red
+    hear(st, 3, mac(2), H, "36,79,1,1,2,3,1,42")              # wolves
+    hear(st, 4, mac(4), H, "36,79,3,1,2,3,1,42")
+    hear(st, 5, H, B, "36,65,1,0,0,1,0,0,1,1,42")
+    hear(st, 10, mac(1), mac(2), "36,68,1,0,0,0,0,1,42")      # Sam tags red twice, Maya once
+    hear(st, 15, mac(1), mac(2), "36,68,1,0,0,0,0,1,42")
+    hear(st, 20, mac(1), mac(4), "36,68,3,0,0,0,0,1,42")
+    hear(st, 30, H, B, "36,69,1,2,1,42")                      # a host that names the yellow pick
+    g = st.game
+    assert g.phase == "ended" and g.winner_team is None and g.winner_player == 2 and not g.draw
+    assert st._winner_label() == "Sam"
+    # wolves sharing the top: a tie between those two, named
+    st = game({1: "Alex", 2: "Sam", 4: "Maya"})
+    hear(st, 0, H, B, "36,90,1,1,42")
+    hear(st, 1, H, B, "36,65,1,0,0,3,0,0,1,1,42")
+    hear(st, 2, mac(1), H, "36,79,0,1,0,3,1,42")
+    hear(st, 3, mac(2), H, "36,79,1,1,2,3,1,42")
+    hear(st, 4, mac(4), H, "36,79,3,1,2,3,1,42")
+    hear(st, 5, H, B, "36,65,1,0,0,1,0,0,1,1,42")
+    hear(st, 10, mac(1), mac(2), "36,68,1,0,0,0,0,1,42")
+    hear(st, 20, mac(1), mac(4), "36,68,3,0,0,0,0,1,42")
+    assert st._infer_winner() == (None, None)                 # nobody ahead: the board would call it a draw
+    evs = hear(st, 30, H, B, "36,69,1,2,1,42")
+    g = st.game
+    assert g.draw and g.winner_player is None and g.tied_players == [2, 4]
+    over = [e for e in evs if e["kind"] == "game_over"][0]
+    assert over["title"] == "SAM & MAYA TIE" and st._winner_label() == "Tie: Sam & Maya"
+    assert g.summary["tie_title"] == "SAM & MAYA TIE" and g.summary["tied_players"] == [2, 4]
+
+
+def test_a_timer_draw_between_teams_names_both():
+    st = game({1: "Alex", 2: "Sam"})
+    hear(st, 0, H, B, "36,90,1,1,42")
+    hear(st, 1, H, B, "36,65,1,0,0,3,1,0,1,1,42")
+    hear(st, 2, mac(1), H, "36,79,0,1,0,3,1,42")
+    hear(st, 3, mac(2), H, "36,79,1,1,1,3,1,42")
+    hear(st, 4, H, B, "36,65,1,0,0,1,1,0,1,1,42")
+    hear(st, 10, mac(1), mac(2), "36,68,1,0,0,0,0,1,42")     # one each
+    hear(st, 20, mac(2), mac(1), "36,68,0,1,1,0,0,1,42")
+    evs = hear(st, 604, H, B, "36,69,1,9,1,42")
+    over = [e for e in evs if e["kind"] == "game_over"][0]
+    assert over["title"] == "RED & BLUE TIE" and st.game.tied_teams == [0, 1]
