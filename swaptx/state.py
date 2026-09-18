@@ -288,6 +288,8 @@ class GameState:
 
     def set_team_name(self, t: int, name: Optional[str]) -> None:
         name = (name or "").strip()
+        if t == FFA_TEAM:
+            name = ""                    # the yellow pick is always Free for all: not a team, never renamed
         if name and name.lower() != team_name(t).lower():
             self.team_names[t] = name
         else:

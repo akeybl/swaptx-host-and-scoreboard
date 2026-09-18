@@ -459,3 +459,11 @@ def test_lone_wolves_inside_a_team_battle():
     s2.death(3, 2, 0, 3)
     s2.f(None, None, "MANUAL,end", 5)
     assert s2.gs.game.winner_player == 3 and s2.gs.game.winner_team is None
+
+
+def test_the_yellow_pick_is_never_renamed():
+    s = Sim(names={1: "Alex"})
+    s.gs.set_team_name(0, "Sharks")
+    s.gs.set_team_name(2, "Wolves")                         # the free-for-all pick is not a team
+    assert s.gs.tname(0) == "Sharks" and s.gs.tname(2) == "Free for all"
+    assert s.gs.team_is_custom(0) and not s.gs.team_is_custom(2)

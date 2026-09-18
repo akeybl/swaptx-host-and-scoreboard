@@ -366,6 +366,8 @@ def create_app(hub: Hub) -> FastAPI:
     async def api_set_team(team: int, body: dict):
         if not 0 <= team <= 3:
             raise HTTPException(400, "team must be 0..3")
+        if team == 2 and (body.get("name") or "").strip():
+            raise HTTPException(400, "the yellow pick is always Free for all and cannot be renamed")
         hub.state.set_team_name(team, body.get("name"))
         hub.store.set_setting("team_names", {str(t): n for t, n in hub.state.team_names.items()})
         hub._persist_game(force=True)
