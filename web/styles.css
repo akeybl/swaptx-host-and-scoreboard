@@ -380,9 +380,9 @@ html.phone .board>*{margin:auto 0}                     /* centred when there is 
 html.phone .teams{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-flow:row;gap:2.6vw;flex:none}
 html.phone .team-col{border-radius:3vw;border-width:.5vw;--rowh:9vw}
 html.phone .team-col.lead{box-shadow:none}
-html.phone .team-head{padding:3.6vw 4vw 1vw;gap:2vw}
+html.phone .team-head{padding:6vw 4vw 1vw;gap:2vw}                 /* headroom: the score pops taller when it changes */
 html.phone .team-name{font-size:6.5vw}
-html.phone .team-score{font-size:18vw}
+html.phone .team-score{font-size:18vw;line-height:1}
 html.phone .team-rank{font-size:2.8vw}
 html.phone .team-sub,html.phone .team-foot,html.phone .roster,html.phone .team-col.placeholder{display:none}
 html.phone .team-col.wolves .roster{display:block}
