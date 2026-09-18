@@ -346,3 +346,48 @@ body{font-size:2.4vmin;line-height:1.2}
 .clock-fill{height:100%;width:100%;background:var(--ink);border-radius:.35vmin;transition:width .9s linear}
 /* rear projection: the whole wall flipped left-to-right (M on the wall, or ?mirror=1) */
 html.mirror{transform:scaleX(-1)}
+
+/* ---------- pocket view: a phone shows status, clock, the settings in force, team scores, dongle ---------- */
+html.phone .wall{grid-template-rows:auto 1fr auto}
+html.phone .topbar{display:flex;flex-direction:column;align-items:center;gap:2.4vw;padding:3.5vw 4vw 3vw;min-height:0}
+html.phone .tb-left,html.phone .tb-right{align-items:center;text-align:center;gap:1.6vw}
+html.phone .mode-badge{font-size:8vw}
+html.phone .chips{justify-content:center}
+html.phone .chip{font-size:3.3vw;padding:.8vw 2.4vw;border-radius:1.8vw;border-width:.4vw}
+html.phone .tb-center{padding:0;gap:1.2vw}
+html.phone .clock{font-size:24vw}
+html.phone .clock-label{font-size:3.4vw}
+html.phone .clock-bar{width:64vw;height:1.4vw;border-radius:.7vw;margin-top:1vw}
+html.phone .phase-badge{font-size:7vw}
+html.phone .alive{font-size:3.8vw}
+html.phone .hostctl,html.phone .feed,html.phone #hint,html.phone .lastgame{display:none}
+html.phone .body{display:block;overflow:auto}
+html.phone .board{padding:3.5vw;overflow:visible;display:block}
+html.phone .teams{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-flow:row;gap:3vw;flex:none}
+html.phone .team-col{border-radius:3vw;border-width:.5vw;--rowh:9vw}
+html.phone .team-col.lead{box-shadow:none}
+html.phone .team-head{padding:4.5vw 4vw 1.5vw;gap:2vw}
+html.phone .team-name{font-size:7vw}
+html.phone .team-score{font-size:20vw}
+html.phone .team-rank{font-size:2.8vw}
+html.phone .team-sub,html.phone .team-foot,html.phone .roster,html.phone .team-col.placeholder{display:none}
+html.phone .team-col.wolves .roster{display:block}
+html.phone .team-col .target{padding:0 4vw 3vw;font-size:3vw;gap:2vw}
+html.phone .target-bar{height:1.4vw;border-radius:.7vw}
+html.phone .roster-head{font-size:2.6vw}
+html.phone .p-row{--rowh:9vw}
+html.phone .p-name{font-size:4.6vw}
+html.phone .p-k,html.phone .p-d{font-size:4.6vw}
+html.phone .royale{--rows:8}
+html.phone .r-head{font-size:2.8vw}
+html.phone .r-row .p-name,html.phone .r-row .p-k,html.phone .r-row .p-d{font-size:4.6vw}
+html.phone .center .title{font-size:13vw}
+html.phone .center .sub{font-size:4vw}
+html.phone .center .sub.warn{font-size:3.6vw}
+html.phone .statusbar{height:9vw;font-size:3.3vw;padding:0 4vw;justify-content:center;gap:2.4vw}
+html.phone .overlay{inset:var(--tb,40vw) 0 9vw 0;padding:5vw 4vw;gap:3vw;overflow:auto}
+html.phone .go-title{font-size:13vw}
+html.phone .go-sub{font-size:3.4vw}
+html.phone .awards,html.phone .final .f-row,html.phone .final .f-head{display:none}
+html.phone .final,html.phone .final.team-final{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:auto;gap:3vw;width:100%}
+html.phone .f-team-head{font-size:5vw}

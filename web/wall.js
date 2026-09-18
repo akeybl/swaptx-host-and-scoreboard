@@ -14,6 +14,12 @@
   } catch (e) { mirror = mirrorParam != null && mirrorParam !== "0" && mirrorParam !== "off"; }
   const applyMirror = () => document.documentElement.classList.toggle("mirror", mirror);
   applyMirror();
+  // A phone gets the pocket view: status and clock, the settings in force, team scores, dongle.
+  const phoneMq = window.matchMedia ? window.matchMedia("(max-width: 700px)") : null;
+  const isPhone = () => !!(phoneMq && phoneMq.matches);
+  const applyPhone = () => document.documentElement.classList.toggle("phone", isPhone());
+  applyPhone();
+  if (phoneMq && phoneMq.addEventListener) phoneMq.addEventListener("change", () => { applyPhone(); if (snap) render(); });
   let view = new URLSearchParams(location.search).get("view") || "board";   // board | stats
   const players = () => new Map((snap?.players || []).map(p => [p.number, p]));
 
@@ -83,7 +89,7 @@
     // Hosting: the settings are toggles, and the mode toggle stands in for the big badge. When the
     // game starts the same controls collapse down to their chosen values (the elements stay, only
     // a class changes, so the collapse animates). When a gun hosts, the header is the plain chip list.
-    const toggles = !!host.enabled;
+    const toggles = !!host.enabled && !isPhone();       // a phone shows the settings in force, never the controls
     // the mode toggle stands in for the big badge; when Royale is hidden there is no mode toggle, so the badge stays
     const modeToggle = toggles && !(snap.config && snap.config.hide_royale);
     $("modeBadge").style.display = modeToggle ? "none" : "";
@@ -354,6 +360,7 @@
   // Every player is always on screen: measure the space each list really has and set a
   // uniform row height from it; the type inside is sized off the row, so it shrinks with it.
   function fitRows() {
+    if (isPhone()) return;                                // the pocket view has no rosters to fit
     const vmin = Math.min(innerWidth, innerHeight) / 100;
     const floor = 2.2 * vmin;
     const cols = [...document.querySelectorAll("#board .team-col")];
