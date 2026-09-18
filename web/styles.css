@@ -355,14 +355,15 @@ html.phone .mode-badge{font-size:7vw;line-height:1}
 html.phone .chips{justify-content:center;gap:1.2vw}
 html.phone .chip{font-size:3.1vw;padding:.7vw 2.2vw;border-radius:1.8vw;border-width:.4vw}
 html.phone .tb-center{padding:0;gap:0}
-html.phone .clock{font-size:22vw;line-height:.85;margin-top:1.4vw}
+html.phone .clock{font-size:22vw;line-height:.85;margin-top:3vw}
 html.phone .clock-label{font-size:3vw;margin-top:-1.2vw}
 html.phone .clock-bar{width:60vw;height:1.3vw;border-radius:.65vw;margin-top:1.6vw}
 html.phone .phase-badge{font-size:5.6vw;line-height:1;margin-top:1vw}
 html.phone .alive{font-size:3.6vw}
 html.phone .hostctl,html.phone .feed,html.phone #hint,html.phone .lastgame{display:none}
-html.phone .body{display:block;overflow:auto;padding-bottom:16vw}
-html.phone .board{padding:3vw;overflow:visible;display:block}
+html.phone .body{display:flex;flex-direction:column;overflow:auto;padding-bottom:16vw}
+html.phone .board{flex:1;display:flex;flex-direction:column;padding:3vw;overflow:visible}
+html.phone .board>*{margin:auto 0}                     /* centred when there is room, never clipped when there is not */
 html.phone .teams{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-flow:row;gap:2.6vw;flex:none}
 html.phone .team-col{border-radius:3vw;border-width:.5vw;--rowh:9vw}
 html.phone .team-col.lead{box-shadow:none}
@@ -381,7 +382,6 @@ html.phone .p-k,html.phone .p-d{font-size:4.6vw}
 html.phone .royale{--rows:8}
 html.phone .r-head{font-size:2.8vw}
 html.phone .r-row .p-name,html.phone .r-row .p-k,html.phone .r-row .p-d{font-size:4.6vw}
-html.phone .center{padding-top:4vw}
 html.phone .center .title{font-size:12vw}
 html.phone .center .sub{font-size:3.8vw}
 html.phone .center .sub.warn{font-size:3.4vw}
