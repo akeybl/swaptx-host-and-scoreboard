@@ -18,23 +18,31 @@
   }
 
   // ---------------- teams
+  // Names save themselves: each change lands within half a second, Enter or leaving the field at once.
+  function autosave(inp, save) {
+    let timer = null, last = inp.value;
+    const flush = () => { clearTimeout(timer); timer = null; if (inp.value !== last) { last = inp.value; save(); } };
+    inp.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(flush, 500); });
+    inp.addEventListener("blur", flush);
+    inp.addEventListener("keydown", e => { if (e.key === "Enter") { flush(); inp.blur(); } });
+    return () => { last = inp.value; };          // sync from the server without triggering a save
+  }
   function renderTeams() {
     const tb = $("teamsTable").querySelector("tbody");
     if (!tb.dataset.built) {
       // Red, Blue and Green are teams; the yellow pick is always Free for all, so it takes no name
-      tb.innerHTML = [0, 1, 3].map(t => `<tr data-t="${t}"><td><span class="t${t}">●</span> ${TEAMS[t]}</td><td><input class="tname" placeholder="${TEAMS[t]}"></td><td><button class="b sm tsave">Save</button></td></tr>`).join("") +
-        `<tr data-t="2" class="fixed"><td><span class="t2">●</span> Yellow</td><td><span class="help">always Free for all</span></td><td></td></tr>`;
+      tb.innerHTML = [0, 1, 3].map(t => `<tr data-t="${t}"><td><span class="t${t}">●</span> ${TEAMS[t]}</td><td><input class="tname" placeholder="${TEAMS[t]}"></td></tr>`).join("") +
+        `<tr data-t="2" class="fixed"><td><span class="t2">●</span> Yellow</td><td><span class="help">always Free for all</span></td></tr>`;
       tb.dataset.built = "1";
       tb.querySelectorAll("tr:not(.fixed)").forEach(tr => {
         const t = +tr.dataset.t, inp = tr.querySelector(".tname");
         const save = async () => { try { await W.api(`/api/teams/${t}`, { method: "PUT", body: JSON.stringify({ name: inp.value }) }); $("teamsMsg").textContent = `Saved ${TEAMS[t]} team name`; } catch (e) { $("teamsMsg").textContent = "Error: " + e.message; } };
-        tr.querySelector(".tsave").addEventListener("click", save);
-        inp.addEventListener("keydown", e => { if (e.key === "Enter") save(); });
+        inp._synced = autosave(inp, save);
       });
     }
     tb.querySelectorAll("tr:not(.fixed)").forEach(tr => {
       const t = tr.dataset.t, inp = tr.querySelector(".tname");
-      if (document.activeElement !== inp) inp.value = (snap.team_custom && snap.team_custom[t]) ? snap.team_names[t] : "";
+      if (document.activeElement !== inp) { inp.value = (snap.team_custom && snap.team_custom[t]) ? snap.team_names[t] : ""; inp._synced(); }
     });
   }
   const teamLabel = (t) => (snap && snap.team_names && snap.team_names[String(t)]) || TEAMS[t];
@@ -44,20 +52,20 @@
     const by = new Map((snap.players || []).map(p => [p.number, p]));
     const tb = $("playersTable").querySelector("tbody");
     if (!tb.dataset.built) {
-      tb.innerHTML = Array.from({ length: 16 }, (_, i) => i + 1).map(n => `<tr data-n="${n}"><td><b>${n}</b><br><small class="u mono">…:${n.toString(16).padStart(2, "0")}</small></td><td><input class="pname" placeholder="Player ${n}"></td><td class="pradio"></td><td class="pstats"></td><td><button class="b sm psave">Save</button></td></tr>`).join("");
+      tb.innerHTML = Array.from({ length: 16 }, (_, i) => i + 1).map(n => `<tr data-n="${n}"><td><b>${n}</b><br><small class="u mono">…:${n.toString(16).padStart(2, "0")}</small></td><td><input class="pname" placeholder="Player ${n}"></td><td class="pradio"></td><td class="pstats"></td></tr>`).join("");
       tb.dataset.built = "1";
       tb.querySelectorAll("tr").forEach(tr => {
-        const n = +tr.dataset.n;
-        tr.querySelector(".psave").addEventListener("click", async () => {
-          const body = { name: tr.querySelector(".pname").value, team_override: null };   // teams always come from the radio
+        const n = +tr.dataset.n, inp = tr.querySelector(".pname");
+        const save = async () => {
+          const body = { name: inp.value, team_override: null };   // teams always come from the radio
           try { await W.api(`/api/players/${n}`, { method: "PUT", body: JSON.stringify(body) }); $("playersMsg").textContent = `Saved player ${n}`; } catch (e) { $("playersMsg").textContent = "Error: " + e.message; }
-        });
-        tr.querySelector(".pname").addEventListener("keydown", e => { if (e.key === "Enter") tr.querySelector(".psave").click(); });
+        };
+        inp._synced = autosave(inp, save);
       });
     }
     tb.querySelectorAll("tr").forEach(tr => {
       const n = +tr.dataset.n, p = by.get(n) || {};
-      const nameEl = tr.querySelector(".pname"); if (document.activeElement !== nameEl) nameEl.value = p.name || snap.names[String(n)] || "";
+      const nameEl = tr.querySelector(".pname"); if (document.activeElement !== nameEl) { nameEl.value = p.name || snap.names[String(n)] || ""; nameEl._synced(); }
       const team = p.effective_team;
       tr.querySelector(".pradio").innerHTML = p.last_seen ? `<span class="pill ${p.online ? "ok" : ""}">${p.online ? "online" : "quiet"}</span> ${p.rssi != null ? p.rssi + " dBm" : ""}<br><small class="u">${team != null ? `<span class="t${team}">${teamLabel(team)}</span> (${p.team_source})` : "team ?"} · seen ${W.clock(p.last_seen)}</small>` : `<span class="pill">never heard</span>`;
       tr.querySelector(".pstats").innerHTML = p.in_game ? `${p.kills} kills / ${p.deaths} deaths · streak ${p.best_streak}${p.lives_left != null ? " · lives " + p.lives_left : ""}${p.eliminated ? ' · <span class="pill bad">OUT</span>' : ""}${p.gun_restarts ? ` · <span class="pill warn">${p.gun_restarts} restart</span>` : ""}<br><small class="u">reported score ${p.score_reported ?? "-"}</small>` : `<small class="u">not in game</small>`;
