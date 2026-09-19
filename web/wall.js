@@ -818,7 +818,8 @@
   function gameOverHtml(sm, wd) {
     const tn = sm.winner_team != null ? teamName(sm.winner_team).toUpperCase() : "";
     const byPlayer = !!(sm.winner_player && sm.kind !== "team");          // a colour with one player on it: name the player
-    const title = sm.draw ? (sm.tie_title || "DRAW") : sm.winner_label ? ((sm.winner_team != null && !byPlayer) ? (teamCustom(sm.winner_team) ? `${tn} ${tn.endsWith("S") ? "WIN" : "WINS"}` : `${tn} TEAM WINS`) : `${nameOf(sm.winner_player)} WINS`) : "GAME OVER";
+    // "Winner:" never has to guess whether a team name is plural
+    const title = sm.draw ? (sm.tie_title || "DRAW") : sm.winner_label ? ((sm.winner_team != null && !byPlayer) ? (teamCustom(sm.winner_team) ? `WINNER: ${tn}` : `WINNER: ${tn} TEAM`) : `WINNER: ${nameOf(sm.winner_player).toUpperCase()}`) : "GAME OVER";
     const titleColor = (sm.winner_team != null && !byPlayer) ? W.teamVar(sm.winner_team) : (sm.winner_player ? pColorN(sm.winner_player) : "var(--ink)");
     const awards = (sm.awards || []).map((a, i) => `<div class="award ${a.key}">${medal(a.key)}<div class="al">${W.esc(a.label)}</div><div class="an" style="color:${pColorN(a.player)}">${W.esc(nameOf(a.player))}</div><div class="av">${W.esc(a.value || "")}</div></div>`).join("");
     const ps = [...(sm.players || [])].sort(sm.kind === "royale" ? royaleSort : scoreSort);

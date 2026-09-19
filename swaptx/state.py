@@ -1131,10 +1131,10 @@ class GameState:
         if draw:
             title = self._tie_title() or "DRAW"
         elif winner_player is not None and (winner_team is None or self.game_kind() != "team"):
-            title = f"{self.pname(winner_player).upper()} WINS"
+            title = f"WINNER: {self.pname(winner_player).upper()}"
         elif winner_team is not None:
             tn = self.tname(winner_team).upper()
-            title = (f"{tn} WIN" if tn.endswith("S") else f"{tn} WINS") if self.team_is_custom(winner_team) else f"{tn} TEAM WINS"
+            title = f"WINNER: {tn}" if self.team_is_custom(winner_team) else f"WINNER: {tn} TEAM"   # "Winner:" needs no plural
         else:
             title = "GAME OVER"
         detail = {"game_over": "Host ended the game", "superseded": "A new game started",
@@ -1285,14 +1285,14 @@ class GameState:
         return [s[0] for s in tied if s[0] is not None], [s[1][0].number for s in tied if s[0] is None]
 
     def _tie_title(self) -> Optional[str]:
-        """'RED & BLUE TIE', 'ZOE & LEO TIE', '4-WAY TIE'; None when the draw is between nobody in particular."""
+        """'TIE: RED & BLUE', 'TIE: ZOE & LEO', '4-WAY TIE'; None when the draw is between nobody in particular."""
         g = self.game
         names = [self.tname(t) for t in g.tied_teams] + [self.pname(p) for p in g.tied_players]
         if not names:
             return None
         if len(names) > 3:
             return f"{len(names)}-WAY TIE"
-        return " & ".join(n.upper() for n in names) + " TIE"
+        return "TIE: " + " & ".join(n.upper() for n in names)
 
     def _winner_label(self) -> Optional[str]:
         """Who won, as a name: the player when a colour with one player on it won a royale, else the team."""

@@ -150,8 +150,8 @@ def test_a_host_naming_the_yellow_pick_means_the_best_wolf_or_a_tie_between_wolv
     g = st.game
     assert g.draw and g.winner_player is None and g.tied_players == [2, 4]
     over = [e for e in evs if e["kind"] == "game_over"][0]
-    assert over["title"] == "SAM & MAYA TIE" and st._winner_label() == "Tie: Sam & Maya"
-    assert g.summary["tie_title"] == "SAM & MAYA TIE" and g.summary["tied_players"] == [2, 4]
+    assert over["title"] == "TIE: SAM & MAYA" and st._winner_label() == "Tie: Sam & Maya"
+    assert g.summary["tie_title"] == "TIE: SAM & MAYA" and g.summary["tied_players"] == [2, 4]
 
 
 def test_a_timer_draw_between_teams_names_both():
@@ -165,4 +165,4 @@ def test_a_timer_draw_between_teams_names_both():
     hear(st, 20, mac(2), mac(1), "36,68,0,1,1,0,0,1,42")
     evs = hear(st, 604, H, B, "36,69,1,9,1,42")
     over = [e for e in evs if e["kind"] == "game_over"][0]
-    assert over["title"] == "RED & BLUE TIE" and st.game.tied_teams == [0, 1]
+    assert over["title"] == "TIE: RED & BLUE" and st.game.tied_teams == [0, 1]

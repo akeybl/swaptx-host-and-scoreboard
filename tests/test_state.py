@@ -194,7 +194,7 @@ def test_royale_one_life_last_standing_and_individual_winner():
     evs = s.death(3, 1, 2, 3)
     assert any(e["title"] == "LAST ONE STANDING" and "Kim" in e["detail"] for e in evs)
     evs = s.over(12)                           # 10 + player index 2 = Kim
-    assert evs[0]["title"] == "KIM WINS" and s.gs.game.winner_player == 3 and s.gs.game.winner_team is None
+    assert evs[0]["title"] == "WINNER: KIM" and s.gs.game.winner_player == 3 and s.gs.game.winner_team is None
 
 
 def test_two_player_royale_by_colour_names_the_player():
@@ -202,7 +202,7 @@ def test_two_player_royale_by_colour_names_the_player():
     s.setup({1: 0, 2: 1}, ROYALE)
     s.death(1, 2, 1)
     evs = s.over(0)                            # the host names the colour; only Alex is on it
-    assert evs[0]["title"] == "ALEX WINS" and s.gs.game.winner_player == 1
+    assert evs[0]["title"] == "WINNER: ALEX" and s.gs.game.winner_player == 1
 
 
 def test_game_over_by_team_colour_and_relays():
@@ -210,7 +210,7 @@ def test_game_over_by_team_colour_and_relays():
     s.setup()
     s.death(1, 2, 1)
     evs = s.over(0)
-    assert evs[0]["kind"] == "game_over" and evs[0]["title"] == "RED TEAM WINS" and s.gs.game.winner_team == 0
+    assert evs[0]["kind"] == "game_over" and evs[0]["title"] == "WINNER: RED TEAM" and s.gs.game.winner_team == 0
     g = s.gs.snapshot(now=s.t)["game"]
     assert g["phase"] == "ended" and g["summary"]["total_kills"] == 1
     labels = {a["label"] for a in g["summary"]["awards"]}
@@ -227,7 +227,7 @@ def test_inferred_winner_when_host_never_says():
     s.death(1, 2, 1)
     s.death(1, 4, 1, 3)
     evs = s.f(None, None, "MANUAL,end", 5)
-    assert s.gs.game.winner_team == 0 and evs[0]["title"] == "RED TEAM WINS"
+    assert s.gs.game.winner_team == 0 and evs[0]["title"] == "WINNER: RED TEAM"
 
 
 def test_start_beacon_repeat_and_supersede():
@@ -439,7 +439,7 @@ def test_battle_royale_in_squads_is_last_team_standing():
     s2.death(1, 3, 1)
     s2.death(1, 4, 1, 3)
     evs = s2.over(0)
-    assert evs[0]["title"] == "RED TEAM WINS" and s2.gs.game.winner_team == 0
+    assert evs[0]["title"] == "WINNER: RED TEAM" and s2.gs.game.winner_team == 0
 
 
 def test_lone_wolves_inside_a_team_battle():
