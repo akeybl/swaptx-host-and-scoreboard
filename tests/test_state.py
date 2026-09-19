@@ -406,7 +406,7 @@ def test_custom_team_names_flow_through_titles_and_tables():
     assert snap["team_names"] == {"0": "Sharks", "1": "Blue", "2": "Free for all", "3": "Green"}
     assert snap["teams"][0]["name"] == "Sharks" and snap["players"][0]["team_name"] == "Sharks"
     evs = s.over(0)
-    assert evs[0]["title"] == "SHARKS WIN" and s.gs.game.summary["winner_label"] == "Sharks"
+    assert evs[0]["title"] == "WINNER: SHARKS" and s.gs.game.summary["winner_label"] == "Sharks"
     s.gs.set_team_name(0, "Team Rocket")
     assert s.gs.tname(0) == "Team Rocket"
     s2 = Sim()
