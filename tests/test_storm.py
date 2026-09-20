@@ -166,3 +166,49 @@ def test_a_timer_draw_between_teams_names_both():
     evs = hear(st, 604, H, B, "36,69,1,9,1,42")
     over = [e for e in evs if e["kind"] == "game_over"][0]
     assert over["title"] == "TIE: RED & BLUE" and st.game.tied_teams == [0, 1]
+
+
+def _team_game(names={1: "Alex", 2: "Sam", 3: "Kim", 4: "Maya"}):
+    st = game(names)
+    hear(st, 0, H, B, "36,90,1,1,42")
+    hear(st, 1, H, B, "36,65,1,0,0,3,0,0,1,1,42")
+    for n, t in ((1, 0), (2, 0), (3, 1), (4, 1)):
+        hear(st, 2, mac(n), H, f"36,79,{n-1},1,{t},3,1,42")
+    hear(st, 5, H, B, "36,65,1,0,0,1,0,0,1,1,42")
+    return st
+
+
+def test_a_death_after_the_game_over_never_starts_a_phantom_game():
+    st = _team_game()
+    hear(st, 10, mac(1), mac(3), "36,68,2,0,0,0,0,1,42")      # Kim tags Alex
+    hear(st, 100, H, B, "36,69,1,1,1,42")                     # blue wins
+    g = st.game
+    started, kills = g.started_at, g.total_kills
+    hear(st, 102, mac(2), mac(4), "36,68,3,1,0,0,0,1,42")     # a kill from the last moments, reported late
+    assert g.phase == "ended" and g.started_at == started and g.total_kills == kills + 1
+    assert g.summary["total_kills"] == kills + 1               # the game-over screen follows
+    hear(st, 108, mac(2), mac(3), "36,68,2,1,0,0,0,1,42")     # too late: not counted, no new game
+    assert g.phase == "ended" and g.started_at == started and g.total_kills == kills + 1
+    hear(st, 104, mac(1), H, "36,69,0,1,1,42")                # the players' relayed copies change nothing
+    hear(st, 109, mac(3), mac(1), "36,75,0,2,1,42")           # a stray hit report neither
+    assert g.phase == "ended" and g.started_at == started and len(st.games) == 0
+
+
+def test_a_death_resent_with_a_new_sequence_number_is_the_same_death():
+    st = _team_game()
+    hear(st, 10, mac(1), mac(3), "36,68,2,0,0,0,0,1,42")
+    hear(st, 12.5, mac(1), mac(3), "36,68,2,0,0,0,0,1,42")    # the headset never got an answer: sent again
+    hear(st, 15, mac(1), mac(3), "36,68,2,0,0,0,0,1,42")      # and again (each resend refreshes the window)
+    assert st.players[1].deaths == 1 and st.players[3].kills == 1
+    hear(st, 40, mac(1), mac(3), "36,68,2,0,0,0,0,1,42")      # long after: a new death
+    assert st.players[1].deaths == 2 and st.players[3].kills == 2
+
+
+def test_a_shooter_nobody_ever_heard_gets_no_seat_and_no_credit():
+    st = _team_game()
+    hear(st, 10, mac(4), "00:00:00:00:00:0b", "36,68,10,3,1,0,0,1,42")   # Maya "shot by gun 11"
+    assert st.players[4].deaths == 1 and st.game.total_kills == 0
+    assert not st.players[11].in_game and st.players[11].kills == 0
+    hear(st, 20, mac(3), "00:00:00:00:00:0f", "36,75,14,2,1,42")         # Kim "hit by gun 15"
+    assert not st.players[15].in_game
+    assert [p.number for p in st.players.values() if p.in_game] == [1, 2, 3, 4]

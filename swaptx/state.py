@@ -34,6 +34,9 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "stale_game_s": 1800,           # live game with no traffic this long is flagged stale
     "timeline_max": 400,
     "auto_end_grace_s": 45,         # timed game: end it this long after the limit if no game-over beacon was heard (0 = never)
+    "post_end_grace_s": 20,         # after a game-over, stray hits and deaths never start a new game for this long
+    "late_kill_window_s": 3,        # ... a death this soon after the end still counts, in the game that just ended
+    "death_retry_s": 4,             # the same death from the same headset within this window is a retry (retries came 2.5 s apart)
     "hide_royale": True,            # the board's own hosting offers Team Battle only (a gun hosting Royale is still followed)
     "hide_five_lives": True,        # ... and unlimited lives only (the five-lives option is hidden)
     "rules": {                      # display-only game rules (we are not the host)
@@ -211,6 +214,7 @@ class GameState:
         # the admin's game-type choice; changes arrive as MANUAL,game_type frames so a replay
         # applies them at the moment they were made instead of rewriting finished games
         self.game_type_override: str = (self.config.get("rules") or {}).get("game_type") or "auto"
+        self._death_seen: dict[tuple, float] = {}       # (src, dst, killer, victim) -> last time heard
         self.names: dict[int, str] = dict(names or {})
         self.team_names: dict[int, str] = {int(k): v for k, v in (team_names or {}).items() if v}
         self.team_overrides: dict[int, int] = dict(team_overrides or {})
@@ -679,13 +683,19 @@ class GameState:
         victim_n = f.get("victim") or ev.src_player
         out: list[dict] = []
         if self.game.phase != "live":
+            if self._just_ended(ts):
+                return [self._emit(ts, "damage", "Hit reported after the game ended", frame.txt, frame=frame, wall=False)]
             out += self._start_game(ts, {}, frame, "inferred")
         names = []
         if shooter_n:
             k = self._player(shooter_n, None)
-            self._ensure_in_game(k, ts)
-            k.hits_dealt += 1
-            names.append(k.display_name())
+            if self._phantom(k):
+                out.append(self._emit(ts, "unknown", f"Hit credited to {k.display_name()}, a gun never heard on the radio (a misread shot)",
+                                      frame.txt, frame=frame, wall=False))
+            else:
+                self._ensure_in_game(k, ts)
+                k.hits_dealt += 1
+                names.append(k.display_name())
         if victim_n:
             v = self._player(victim_n, None)
             self._ensure_in_game(v, ts)
@@ -700,17 +710,47 @@ class GameState:
         ts = frame.ts
         f = ev.fields
         out: list[dict] = []
+        # A victim's headset resends a death until the shooter's headset answers, each burst with a
+        # new sequence number: the same death from the same headset inside the window is a retry.
+        key = (frame.src, frame.dst, f.get("player"), f.get("victim"))
+        last = self._death_seen.get(key)
+        self._death_seen[key] = ts
+        if last is not None and 0 <= ts - last < float(self.config["death_retry_s"]):
+            return [self._emit(ts, "retry", "Death message retried", frame.txt, frame=frame, wall=False)]
+        into_ended = False
         if self.game.phase != "live":
-            out += self._start_game(ts, {}, frame, "inferred")
+            if self._just_ended(ts):
+                if ts - (self.game.ended_at or 0) > float(self.config["late_kill_window_s"]):
+                    return [self._emit(ts, "late", "Death reported after the game ended, not counted", frame.txt,
+                                       frame=frame, wall=False)]
+                into_ended = True             # a kill from the last moments, still that game's
+            else:
+                out += self._start_game(ts, {}, frame, "inferred")
         killer_n = f.get("player") or ev.dst_player
         victim_n = f.get("victim") or ev.src_player
+        if victim_n and killer_n and not f.get("environment"):
+            k = self._player(killer_n, None)
+            if self._phantom(k):
+                # a shooter no radio has ever heard from is a misread shot: the death is real, the credit is not
+                v = self._player(victim_n, None)
+                self._ensure_in_game(v, ts)
+                vt = f.get("victim_team")
+                if isinstance(vt, int) and 0 <= vt <= 3:
+                    v.team = vt
+                out += self._record_unattributed_death(ts, v, frame, storm=False)
+                if into_ended:
+                    self.game.summary = self.game_summary(ts)
+                return out
         if victim_n and f.get("environment") == "storm":
             v = self._player(victim_n, None)
             self._ensure_in_game(v, ts)
             vt = f.get("victim_team")
             if isinstance(vt, int) and 0 <= vt <= 3:
                 v.team = vt
-            return out + self._record_storm_death(ts, v, frame)
+            out += self._record_unattributed_death(ts, v, frame, storm=True)
+            if into_ended:
+                self.game.summary = self.game_summary(ts)
+            return out
         if not killer_n or not victim_n:
             out.append(self._emit(ts, "unknown", "Death message without both players", frame.txt, frame=frame, wall=False))
             return out
@@ -729,11 +769,21 @@ class GameState:
                 self._reinfer_team(k)
             self._reinfer_teams()
         out += self._record_elimination(ts, k, v, frame)
+        if into_ended:
+            self.game.summary = self.game_summary(ts)   # the game-over screen follows
         return out
 
-    def _record_storm_death(self, ts: float, v: Player, frame: Frame | None) -> list[dict]:
-        """36,68,99,<victim>,<team>,0,0,1 to the host: the storm took the victim's last health.
-        Nobody gets the kill."""
+    def _just_ended(self, ts: float) -> bool:
+        """Inside the grace after a game-over: stray hits and deaths belong to that game, or to nobody."""
+        g = self.game
+        return g.phase == "ended" and g.ended_at is not None and 0 <= ts - g.ended_at < float(self.config["post_end_grace_s"])
+
+    def _phantom(self, p: Player) -> bool:
+        """A player nobody has ever heard on the radio: a shooter index a headset misread from a shot."""
+        return p.last_seen is None and not p.in_game
+
+    def _record_unattributed_death(self, ts: float, v: Player, frame: Frame | None, storm: bool) -> list[dict]:
+        """A death with nobody to credit: the storm (36,68,99,...) or a shooter that does not exist."""
         v.deaths += 1
         v.death_streak += 1
         v.worst_death_streak = max(v.worst_death_streak, v.death_streak)
@@ -749,9 +799,11 @@ class GameState:
             v.alive, v.eliminated, v.out_at = False, True, ts
             v.alive_since = None
         detail = f"{v.display_name()} is OUT" if v.eliminated else ""
-        return [self._emit(ts, "kill", f"STORM ➜ {v.display_name()}", detail, players=[v.number],
+        who = "STORM" if storm else "?"
+        return [self._emit(ts, "kill", f"{who} ➜ {v.display_name()}", detail, players=[v.number],
                            team=v.effective_team, frame=frame, severity="kill",
-                           data={"killer": None, "victim": v.number, "storm": True, "streak": 0, "first_blood": False})]
+                           data={"killer": None, "victim": v.number, "storm": storm, "unknown_shooter": not storm,
+                                 "streak": 0, "first_blood": False})]
 
     def _record_elimination(self, ts: float, k: Player, v: Player, frame: Frame | None) -> list[dict]:
         out: list[dict] = []
@@ -841,6 +893,8 @@ class GameState:
                                   "Heard from the player's own report", players=[n], team=p.effective_team,
                                   frame=frame, severity="kill", data={"killer": n, "victim": None, "streak": p.streak,
                                                                      "first_blood": False}))
+            if self.game.phase == "ended":
+                self.game.summary = self.game_summary(ts)
         if self.game.phase == "live":
             self._apply_lives(p, f.get("lives_left"), ts)
         out.append(self._emit(ts, "report", f"{p.display_name()} reported {plural(p.kills, 'kill')}",
@@ -950,6 +1004,8 @@ class GameState:
         pl = f.get("player")
         out: list[dict] = []
         if self.game.phase != "live":
+            if self._just_ended(ts):
+                return [self._emit(ts, "late", "Capture reported after the game ended", frame.txt, frame=frame, wall=False)]
             out += self._start_game(ts, {}, frame, "inferred")
         if isinstance(team, int) and 0 <= team <= 3:
             self.game.team_objective_points[str(team)] = self.game.team_objective_points.get(str(team), 0) + 1
@@ -1080,6 +1136,7 @@ class GameState:
         g.ended_at = None
         g.end_reason = None
         g.start_source = source
+        self._death_seen.clear()                 # a death in a new game is never a retry of one from the last
         g.settings.update(settings)
         if isinstance(settings.get("mode"), int):
             g.mode = settings["mode"]

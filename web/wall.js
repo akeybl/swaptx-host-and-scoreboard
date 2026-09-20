@@ -869,8 +869,8 @@
 
   function eventHtml(e, wd, full) {
     let txt = "";
-    if (e.kind === "kill" && e.data && e.data.storm) {
-      txt = `<span class="storm">STORM</span> <span class="arrow">➜</span> ` + nameHtml(e.data.victim) +
+    if (e.kind === "kill" && e.data && (e.data.storm || e.data.unknown_shooter)) {
+      txt = `<span class="storm">${e.data.storm ? "STORM" : "?"}</span> <span class="arrow">➜</span> ` + nameHtml(e.data.victim) +
         (e.detail && /is OUT/.test(e.detail) ? `<span class="sub">${wd.out}</span>` : "");
     } else if (e.kind === "kill" && e.data && e.data.killer) {
       txt = nameHtml(e.data.killer) + (e.data.victim ? ` <span class="arrow">➜</span> ` + nameHtml(e.data.victim) : ` <span>${wd.scored}</span>`);
